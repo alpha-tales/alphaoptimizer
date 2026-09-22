@@ -133,6 +133,7 @@ export declare class BufferedMetrics implements MetricSink {
     private pending?;
     private closed;
     private size;
+    private directoryReady;
     private readonly maxQueue;
     private readonly batchSize;
     private readonly flushMs;

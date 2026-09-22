@@ -1,0 +1,45 @@
+{
+  "timestamp": "2026-09-21T12:11:07.762Z",
+  "codex": "codex-cli 0.149.0",
+  "scope": "Real CLI hooks with synthetic local model transport; not desktop or production model validation",
+  "results": [
+    {
+      "mode": "updatedMCPToolOutput",
+      "exitCode": 0,
+      "calls": 2,
+      "toolName": "exec_command",
+      "hookReceipt": {
+        "event": "PostToolUse",
+        "tool": "Bash",
+        "response": "ALPHA_RAW_SENTINEL_70912",
+        "input": {
+          "command": "/usr/bin/printf ALPHA_RAW_SENTINEL_70912"
+        },
+        "sawOriginal": true
+      },
+      "modelRequestSawOriginal": true,
+      "modelRequestSawReplacement": false,
+      "diagnostic": "Reading additional input from stdin...\n2026-09-21T12:10:17.846319Z ERROR codex_models_manager::manager: failed to refresh available models: We're currently experiencing high demand, which may cause temporary errors.\n2026-09-21T12:10:17.952653Z ERROR codex_models_manager::manager: failed to refresh available models: We're currently experiencing high demand, which may cause temporary errors.\n2026-09-21T12:10:17.952859Z  WARN codex_models_manager::model_info: Unknown model probe is used. This will use fallback model metadata.\n2026-09-21T12:10:18.236052Z  WARN codex_models_manager::model_info: Unknown model probe is used. This will use fallback model metadata.\n",
+      "events": "{\"type\":\"thread.started\",\"thread_id\":\"01a0c3df-c7e3-76c1-8af1-85bc2b86bdcc\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"error\",\"message\":\"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"error\",\"message\":\"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"error\",\"message\":\"Model metadata for `probe` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\"}}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_3\",\"type\":\"command_execution\",\"command\":\"/bin/zsh -lc '/usr/bin/printf ALPHA_RAW_SENTINEL_70912'\",\"aggregated_output\":\"\",\"exit_code\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"command_execution\",\"command\":\"/bin/zsh -lc '/usr/bin/printf ALPHA_RAW_SENTINEL_70912'\",\"aggregated_output\":\"ALPHA_RAW_SENTINEL_70912\",\"exit_code\":0,\"status\":\"completed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_4\",\"type\":\"agent_message\",\"text\":\"Synthetic host probe complete.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":2,\"cached_input_tokens\":0,\"cache_write_input_tokens\":0,\"output_tokens\":2,\"reasoning_output_tokens\":0}}\n"
+    },
+    {
+      "mode": "continueFalse",
+      "exitCode": 0,
+      "calls": 2,
+      "toolName": "exec_command",
+      "hookReceipt": {
+        "event": "PostToolUse",
+        "tool": "Bash",
+        "response": "ALPHA_RAW_SENTINEL_70912",
+        "input": {
+          "command": "/usr/bin/printf ALPHA_RAW_SENTINEL_70912"
+        },
+        "sawOriginal": true
+      },
+      "modelRequestSawOriginal": false,
+      "modelRequestSawReplacement": true,
+      "diagnostic": "Reading additional input from stdin...\n2026-09-21T12:10:44.546331Z ERROR codex_models_manager::manager: failed to refresh available models: We're currently experiencing high demand, which may cause temporary errors.\n2026-09-21T12:10:44.679398Z ERROR codex_models_manager::manager: failed to refresh available models: We're currently experiencing high demand, which may cause temporary errors.\n2026-09-21T12:10:44.679553Z  WARN codex_models_manager::model_info: Unknown model probe is used. This will use fallback model metadata.\n2026-09-21T12:10:44.818671Z  WARN codex_models_manager::model_info: Unknown model probe is used. This will use fallback model metadata.\n",
+      "events": "{\"type\":\"thread.started\",\"thread_id\":\"01a0c3e0-3047-70e0-acd6-490a10a02fe7\"}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_0\",\"type\":\"error\",\"message\":\"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_1\",\"type\":\"error\",\"message\":\"`--dangerously-bypass-hook-trust` is enabled. Enabled hooks may run without review for this invocation.\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_2\",\"type\":\"error\",\"message\":\"Model metadata for `probe` not found. Defaulting to fallback metadata; this can degrade performance and cause issues.\"}}\n{\"type\":\"turn.started\"}\n{\"type\":\"item.started\",\"item\":{\"id\":\"item_3\",\"type\":\"command_execution\",\"command\":\"/bin/zsh -lc '/usr/bin/printf ALPHA_RAW_SENTINEL_70912'\",\"aggregated_output\":\"\",\"exit_code\":null,\"status\":\"in_progress\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_3\",\"type\":\"command_execution\",\"command\":\"/bin/zsh -lc '/usr/bin/printf ALPHA_RAW_SENTINEL_70912'\",\"aggregated_output\":\"ALPHA_RAW_SENTINEL_70912\",\"exit_code\":0,\"status\":\"completed\"}}\n{\"type\":\"item.completed\",\"item\":{\"id\":\"item_4\",\"type\":\"agent_message\",\"text\":\"Synthetic host probe complete.\"}}\n{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":2,\"cached_input_tokens\":0,\"cache_write_input_tokens\":0,\"output_tokens\":2,\"reasoning_output_tokens\":0}}\n"
+    }
+  ]
+}

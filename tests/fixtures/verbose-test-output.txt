@@ -1,0 +1,11 @@
+Vitest run started
+
+✓ src/a.test.ts > keeps normal output
+✓ src/b.test.ts > keeps more normal output
+
+FAIL src/payment.test.ts > invoices > calculates GST
+AssertionError: expected 11 to equal 10
+  at tests/payment.test.ts:42:18
+  at runTest node_modules/vitest/dist/index.js:123:7
+
+Summary: 1 failed, 2 passed, 3 total

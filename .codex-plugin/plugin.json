@@ -1,0 +1,23 @@
+{
+  "name": "alphaoptimizer",
+  "version": "0.1.0",
+  "description": "Local evidence optimizer for Codex tool results and repository retrieval.",
+  "author": {
+    "name": "AlphaTales"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "AlphaOptimizer",
+    "shortDescription": "Keep raw evidence retrievable while returning concise excerpts.",
+    "longDescription": "AlphaOptimizer captures supported textual results, stores raw artifacts locally, selects deterministic evidence, searches repositories, and tracks completion criteria for measured Codex optimization experiments.",
+    "developerName": "AlphaTales",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Read"],
+    "defaultPrompt": [
+      "Select evidence from this output.",
+      "Search repository evidence.",
+      "Check completion criteria."
+    ]
+  },
+  "mcpServers": "./.mcp.json"
+}

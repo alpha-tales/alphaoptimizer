@@ -1,0 +1,27 @@
+node_modules/
+.alphaoptimizer-eval/
+.DS_Store
+*.log
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local runtime data
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Build/test byproducts
+coverage/
+.nyc_output/
+*.tsbuildinfo
+*.tgz
+*.zip

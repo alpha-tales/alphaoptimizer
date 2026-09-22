@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "alphaoptimizer": {
+      "command": "alphaoptimizer",
+      "args": [],
+      "env": {
+        "ALPHAOPTIMIZER_MODE": "observe"
+      }
+    }
+  }
+}

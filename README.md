@@ -15,12 +15,9 @@ lines and waste context. AlphaOptimizer sits between those outputs and Codex.
 flowchart LR
   A[Command or tool output] --> B{Should AlphaOptimizer process it?}
   B -- No --> C[Return original output]
-  B -- Yes --> D[Store full output locally with limits]
-  D --> E[Split output into chunks]
-  E --> F[Keep important diagnostics]
-  E --> G{Is Jev enabled?}
-  G -- Yes --> H[Jev ranks relevant chunks]
-  G -- No --> I[Return original output]
+  B -- Yes --> E[Split output into chunks]
+  E --> H[Jev ranks relevant chunks]
+  H --> D[Store full output locally with limits]
   H --> J[Compact result for Codex]
   J --> K[Codex can request more by artifact ID]
   D --> L[Expiry and quota cleanup]
@@ -32,18 +29,16 @@ The process is:
 2. AlphaOptimizer checks whether the output is worth processing.
 3. Small outputs, failed outputs, structured data, media, unsupported results, and secret-looking
    content pass through unchanged.
-4. Large supported text output is stored in a private local data folder.
-5. The text is split into chunks so it can be searched and selected.
-6. Obvious diagnostics such as failures, expected/actual values, and important matches are preserved.
-7. If Jev is enabled, AlphaOptimizer sends a small bounded set of normal, non-sensitive chunks to Jev
-   for relevance ranking.
-8. If Jev is missing, unavailable, or times out, AlphaOptimizer returns the original output unchanged.
-9. After a successful Jev response, Codex receives a shorter result with selected lines and an artifact ID.
-10. If Codex needs more detail, it can read from the stored original output using that artifact ID.
-11. Stored output expires or is evicted by the configured cleanup rules.
+4. The text is split into chunks so it can be searched and selected.
+5. Obvious diagnostics such as failures, expected/actual values, and important matches are preserved.
+6. AlphaOptimizer sends a small bounded set of normal, non-sensitive chunks to Jev for relevance
+   ranking.
+7. After Jev responds, the full supported output is stored in a private local data folder.
+8. Codex receives a shorter result with selected lines and an artifact ID.
+9. If Codex needs more detail, it can read from the stored original output using that artifact ID.
+10. Stored output expires or is evicted by the configured cleanup rules.
 
-Jev is enabled by providing `ALPHAOPTIMIZER_JEV_API_KEY`. If the key is missing, unavailable, or the
-request fails, AlphaOptimizer returns the original output unchanged.
+Jev is enabled by providing `ALPHAOPTIMIZER_JEV_API_KEY`.
 
 ## Installation
 
@@ -67,8 +62,6 @@ Common options:
 - `ALPHAOPTIMIZER_WORKSPACES`: optional colon-separated allowlist if you want to restrict it.
 - `ALPHAOPTIMIZER_RETENTION_DAYS`: how long stored outputs are kept. Default: `14`.
 - `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget. Default: `268435456`.
-- `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection.
-- `ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET`: approximate selected-output budget.
 - `ALPHAOPTIMIZER_METRICS_ENABLED`: set to `false` to disable local metrics.
 
 To disable capture and selection completely:
@@ -97,7 +90,6 @@ By default:
 - The total store budget defaults to 256 MiB.
 - Old unprotected outputs are evicted when the store needs space.
 - Expired outputs are cleaned on startup, before capture, and during regular sweeps.
-- Metrics are local estimates and do not include source text, goals, commands, paths, or API keys.
 
 Jev is used when `ALPHAOPTIMIZER_JEV_API_KEY` is configured. AlphaOptimizer sends only bounded
 candidate chunks labelled `normal`; sensitive and secret outputs are not sent to Jev.
@@ -107,8 +99,6 @@ candidate chunks labelled `normal`; sensitive and secret outputs are not sent to
 - Secret-looking outputs are skipped before capture.
 - Outputs marked `secret` are not captured.
 - Oversized artifacts pass through unchanged.
-- Jev is used only when an API key is configured.
-- Jev failures return the original output unchanged.
 - Repository search uses workspace checks and avoids symlinks and sensitive paths by default.
 - Local storage has retention and quota limits.
 - AlphaOptimizer does not approve permissions or suppress destructive actions.

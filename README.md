@@ -5,6 +5,15 @@ tool outputs. Instead of sending a huge log or search result straight into the c
 AlphaOptimizer keeps the useful parts visible, keeps the original output available for a limited
 time, and uses Jev to help rank what matters when an API key is configured.
 
+## Observed Results
+
+In initial AlphaTales tests, AlphaOptimizer reduced large tool-output payloads by about 60-65% on
+average, with many runs sitting around 65%. The smallest reductions we saw were around 45%, and the
+largest reached about 80%.
+
+Actual results depend on the shape of the output and the task. These figures describe observed
+context-payload reduction for eligible large outputs, not guaranteed billing savings.
+
 ## How It Works
 
 Codex often runs commands that produce far more text than it needs: test logs, build errors,

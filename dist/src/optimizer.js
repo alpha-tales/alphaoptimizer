@@ -147,8 +147,7 @@ export class AlphaOptimizerEngine {
                 fallbackReason: "output below selection threshold; original content preserved",
             };
         }
-        if (!this.config.jevEnabled ||
-            !this.config.jevApiKey ||
+        if (!this.config.jevApiKey ||
             observation.privacyClass !== "normal") {
             return {
                 mode: this.config.mode,

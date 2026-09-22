@@ -24,7 +24,6 @@ export declare const ConfigSchema: z.ZodObject<{
         observe: "observe";
         off: "off";
     }>>;
-    jevEnabled: z.ZodBoolean;
     jevEndpoint: z.ZodOptional<z.ZodString>;
     jevApiKey: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;

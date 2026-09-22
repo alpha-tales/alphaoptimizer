@@ -250,7 +250,7 @@ describe("security boundaries", () => {
 
   it("parses boolean environment variables strictly", () => {
     expect(loadConfig({}).workspaceAllowlist).toEqual([]);
-    expect(loadConfig({ ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" }).jevEnabled).toBe(true);
-    expect(loadConfig({ ALPHAOPTIMIZER_JEV_ENABLED: "false", ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" }).jevEnabled).toBe(false);
+    expect(loadConfig({}).jevApiKey).toBeUndefined();
+    expect(loadConfig({ ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" }).jevApiKey).toBe("synthetic");
   });
 });

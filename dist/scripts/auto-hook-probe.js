@@ -182,7 +182,7 @@ try {
             `model_providers.probe={name="probe",base_url="http://127.0.0.1:${port}/v1",wire_api="responses",requires_openai_auth=false}`,
             `mcp_servers.alphaoptimizer.command=${JSON.stringify(process.execPath)}`,
             `mcp_servers.alphaoptimizer.args=[${JSON.stringify(path.join(root, "dist/src/server.js"))}]`,
-            `mcp_servers.alphaoptimizer.env={ALPHAOPTIMIZER_DATA_DIR=${JSON.stringify(path.join(workspace, "data"))},ALPHAOPTIMIZER_WORKSPACES=${JSON.stringify(workspace)},ALPHAOPTIMIZER_AUTO_MODE=${JSON.stringify(mode === "baseline" ? "off" : "filter")},ALPHAOPTIMIZER_JEV_ENABLED="false"}`,
+            `mcp_servers.alphaoptimizer.env={ALPHAOPTIMIZER_DATA_DIR=${JSON.stringify(path.join(workspace, "data"))},ALPHAOPTIMIZER_AUTO_MODE=${JSON.stringify(mode === "baseline" ? "off" : "filter")}}`,
             `mcp_servers.alphaoptimizer.tools.process_tool_result.approval_mode="approve"`,
             `mcp_servers.fixture.command=${JSON.stringify(process.execPath)}`,
             `mcp_servers.fixture.args=[${JSON.stringify(fixture)}]`,

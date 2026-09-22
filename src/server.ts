@@ -157,7 +157,7 @@ server.registerTool(
   {
     title: "Search Repository",
     description:
-      "Search an allowed workspace and return source-linked excerpts with content hashes.",
+      "Search a project workspace and return source-linked excerpts with content hashes.",
     inputSchema: {
       workspace: z.string(),
       query: z.string(),

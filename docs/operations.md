@@ -1,6 +1,6 @@
 # AlphaOptimizer Operations
 
-AlphaOptimizer is a local MCP prototype for preserving raw tool output while returning smaller,
+AlphaOptimizer is a local MCP tool for preserving raw tool output while returning smaller,
 cited evidence selections. New installations default to observation behavior through
 `ALPHAOPTIMIZER_MODE=observe`; set `off` to disable capture and selection entirely. Use `filter`
 only after host compatibility is proven.
@@ -22,8 +22,6 @@ remnants.
 ## Important Environment Variables
 
 - `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
-- `ALPHAOPTIMIZER_WORKSPACES`: optional colon-separated workspace allowlist. If unset, the server
-  works globally across project directories.
 - `ALPHAOPTIMIZER_SESSION_ID`: optional stable server-bound session ID. If unset, each server
   process creates a fresh local session.
 - `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection is attempted.
@@ -66,7 +64,7 @@ two seconds and the full search to ten seconds. Lexical fallback uses at most fo
 and 32 MiB of source data. Overflow produces an explicit error so incomplete scans cannot look complete.
 Both paths apply the same exclusions and ignore rules. Hashes use the exact buffer used for excerpts.
 
-## Optional Jev
+## Jev
 
 See [provider setup](provider-jev.md). It is enabled when `ALPHAOPTIMIZER_JEV_API_KEY` is configured.
 

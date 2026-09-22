@@ -176,7 +176,6 @@ export async function processToolResult(
       {
         ...engine.config,
         mode: engine.config.autoMode,
-        jevEnabled: engine.config.jevEnabled,
         selectionTokenBudget: Math.min(engine.config.selectionTokenBudget, 800),
         selectionThresholdTokens: Math.min(
           engine.config.selectionThresholdTokens,

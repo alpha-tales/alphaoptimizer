@@ -154,7 +154,6 @@ export async function processToolResult(engine, raw, signal) {
         const selector = new AlphaOptimizerEngine({
             ...engine.config,
             mode: engine.config.autoMode,
-            jevEnabled: engine.config.jevEnabled,
             selectionTokenBudget: Math.min(engine.config.selectionTokenBudget, 800),
             selectionThresholdTokens: Math.min(engine.config.selectionThresholdTokens, 1500),
         }, engine.store, engine.metrics);

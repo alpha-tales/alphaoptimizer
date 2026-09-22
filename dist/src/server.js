@@ -107,7 +107,7 @@ server.registerTool("read_artifact", {
 }, extra.signal, input.artifactId));
 server.registerTool("search_repository", {
     title: "Search Repository",
-    description: "Search an allowed workspace and return source-linked excerpts with content hashes.",
+    description: "Search a project workspace and return source-linked excerpts with content hashes.",
     inputSchema: {
         workspace: z.string(),
         query: z.string(),

@@ -44,16 +44,11 @@ export const ConfigSchema = z.object({
     sessionId: z.string().min(1),
     metricsEnabled: z.boolean().default(true),
     autoMode: z.enum(["off", "observe", "filter"]).default("off"),
-    jevEnabled: z.boolean(),
     jevEndpoint: z.string().url().optional(),
     jevApiKey: z.string().optional(),
 });
 export function loadConfig(env = process.env) {
     const configuredAllowlist = env.ALPHAOPTIMIZER_WORKSPACES?.split(":").filter(Boolean);
-    const jevExplicit = env.ALPHAOPTIMIZER_JEV_ENABLED
-        ? StrictBooleanSchema.parse(env.ALPHAOPTIMIZER_JEV_ENABLED)
-        : undefined;
-    const jevApiKey = env.ALPHAOPTIMIZER_JEV_API_KEY;
     return ConfigSchema.parse({
         mode: env.ALPHAOPTIMIZER_MODE,
         dataDir: env.ALPHAOPTIMIZER_DATA_DIR,
@@ -67,9 +62,8 @@ export function loadConfig(env = process.env) {
         workspaceAllowlist: configuredAllowlist ?? [],
         sessionId: env.ALPHAOPTIMIZER_SESSION_ID ?? `server-${crypto.randomUUID()}`,
         metricsEnabled: StrictBooleanSchema.parse(env.ALPHAOPTIMIZER_METRICS_ENABLED ?? "true"),
-        jevEnabled: jevExplicit ?? Boolean(jevApiKey),
         autoMode: env.ALPHAOPTIMIZER_AUTO_MODE,
         jevEndpoint: env.ALPHAOPTIMIZER_JEV_ENDPOINT,
-        jevApiKey,
+        jevApiKey: env.ALPHAOPTIMIZER_JEV_API_KEY,
     });
 }

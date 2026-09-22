@@ -12,7 +12,7 @@ Default behavior is conservative:
 
 - Prefer `select_evidence` only for large textual output where exact recovery matters.
 - Use `read_artifact` to expand or verify original text before making claims.
-- Use `search_repository` for exact, source-linked excerpts inside an allowed workspace.
+- Use `search_repository` for exact, source-linked excerpts inside the active project workspace.
 - Use `record_criterion` only for user-stated or clearly labeled project requirements.
 - Treat `check_completion` as advisory. It reports evidence gaps; it does not prove completion by
   itself.

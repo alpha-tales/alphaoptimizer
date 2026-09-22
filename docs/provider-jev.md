@@ -7,7 +7,7 @@ Verified against TypeSafe's first-party documentation on 21 September 2026:
 - [Privacy](https://typesafe.ai/legal/privacy-policy): no training on inputs; retention is described as reasonably necessary, without a fixed deletion deadline. US processing. Do not assume zero retention.
 - [Legal](https://docs.typesafe.ai/legal): customer agreement and DPA; zero-data-retention is an enterprise offering requiring a separate arrangement.
 
-The integration is enabled by providing a Jev API key:
+The integration uses Jev when a Jev API key is provided:
 
 ```sh
 ALPHAOPTIMIZER_JEV_API_KEY=your-key

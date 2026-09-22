@@ -34,7 +34,7 @@ model-observation trace from this script.
 | Durable artifact capture | supported | Local SQLite/artifact tests |
 | Transparent post-tool replacement | unknown | Needs host trace |
 | Capture before host truncation | unknown | Needs host trace |
-| Jev reranking | disabled | Provider contract unverified |
+| Jev relevance ranking | supported when a Jev API key is configured | Unit/integration tests use synthetic provider responses |
 `;
 fs.mkdirSync("docs", { recursive: true });
 fs.writeFileSync(path.join("docs", "local-versions.md"), report);

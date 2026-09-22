@@ -201,7 +201,6 @@ export class AlphaOptimizerEngine {
     }
 
     if (
-      !this.config.jevEnabled ||
       !this.config.jevApiKey ||
       observation.privacyClass !== "normal"
     ) {

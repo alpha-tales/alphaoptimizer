@@ -19,7 +19,6 @@ it.each([true, false])(
         ...process.env,
         ALPHAOPTIMIZER_DATA_DIR: dir,
         ALPHAOPTIMIZER_WORKSPACES: process.cwd(),
-        ALPHAOPTIMIZER_JEV_ENABLED: "false",
         ALPHAOPTIMIZER_METRICS_ENABLED: String(enabled),
         ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
       },

@@ -47,7 +47,7 @@ The process is:
 9. If Codex needs more detail, it can read from the stored original output using that artifact ID.
 10. Stored output expires or is evicted by the configured cleanup rules.
 
-Jev is enabled by providing `ALPHAOPTIMIZER_JEV_API_KEY`.
+Jev is used when `ALPHAOPTIMIZER_JEV_API_KEY` is provided.
 
 ## Installation
 
@@ -68,7 +68,6 @@ workspace and session.
 Common options:
 
 - `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
-- `ALPHAOPTIMIZER_WORKSPACES`: optional colon-separated allowlist if you want to restrict it.
 - `ALPHAOPTIMIZER_RETENTION_DAYS`: how long stored outputs are kept. Default: `14`.
 - `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget. Default: `268435456`.
 - `ALPHAOPTIMIZER_METRICS_ENABLED`: set to `false` to disable local metrics.
@@ -79,7 +78,7 @@ To disable capture and selection completely:
 ALPHAOPTIMIZER_MODE=off
 ```
 
-To enable Jev:
+To connect Jev:
 
 ```sh
 ALPHAOPTIMIZER_JEV_API_KEY=your-key

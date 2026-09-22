@@ -10,6 +10,7 @@ import {
 } from "../contracts/schemas.js";
 import { chunkText } from "../parsers/text.js";
 import { sha256, shortId } from "../util/hash.js";
+import { ensurePrivateDirectory } from "./privateDirectory.js";
 
 type CaptureOptions = {
   captureSource: "hook" | "mcp" | "fixture" | "repository";
@@ -40,13 +41,7 @@ export class EvidenceStore {
     this.rawBudget = Math.floor(policy.maxStoreBytes / 3);
     this.dataDir = dataDir;
     this.artifactDir = path.join(dataDir, "artifacts");
-    fs.mkdirSync(this.dataDir, { recursive: true, mode: 0o700 });
-    const dataStat = fs.statSync(this.dataDir);
-    if ((dataStat.mode & 0o077) !== 0) {
-      throw new Error(
-        `AlphaOptimizer data directory must be private: ${this.dataDir}`,
-      );
-    }
+    ensurePrivateDirectory(this.dataDir);
     fs.mkdirSync(this.artifactDir, { recursive: true, mode: 0o700 });
     this.db = new Database(path.join(dataDir, "alphaoptimizer.sqlite"));
     this.db.pragma("busy_timeout = 5000");

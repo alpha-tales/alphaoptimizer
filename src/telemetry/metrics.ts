@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
+import { ensurePrivateDirectory } from "../store/privateDirectory.js";
 
 const Count = z.number().int().nonnegative().safe();
 const Duration = z.number().finite().nonnegative();
@@ -112,6 +113,7 @@ export class BufferedMetrics implements MetricSink {
   private pending?: Promise<void>;
   private closed = false;
   private size = 0;
+  private directoryReady = false;
   private readonly maxQueue: number;
   private readonly batchSize: number;
   private readonly flushMs: number;
@@ -220,14 +222,10 @@ export class BufferedMetrics implements MetricSink {
   }
 
   private async write(batch: string): Promise<void> {
-    await fs.mkdir(this.directory, { recursive: true, mode: 0o700 });
-    const stat = await fs.lstat(this.directory);
-    if (
-      !stat.isDirectory() ||
-      stat.isSymbolicLink() ||
-      (stat.mode & 0o077) !== 0
-    )
-      throw new Error("Metrics directory must be private");
+    if (!this.directoryReady) {
+      ensurePrivateDirectory(this.directory);
+      this.directoryReady = true;
+    }
     const bytes = Buffer.byteLength(batch);
     if (this.size + bytes > this.maxFileBytes) {
       const previous = this.filename.replace(/\.jsonl$/, ".previous.jsonl");

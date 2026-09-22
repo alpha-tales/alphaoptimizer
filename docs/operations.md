@@ -15,6 +15,9 @@ npm run dev
 
 Runtime data is stored under `~/.local/share/alphaoptimizer` by default. Override with
 `ALPHAOPTIMIZER_DATA_DIR`. The data directory must be private to the current user.
+On Windows, AlphaOptimizer removes inherited permissions and grants access only to
+the current user, `SYSTEM`, and local Administrators using the built-in `whoami`
+and `icacls` commands. If that hardening fails, it does not capture output.
 Expired artifacts are removed on server startup from raw files, SQLite metadata, chunks, and FTS
 entries. This is normal deletion, not forensic erasure of historical disk blocks or SQLite/WAL
 remnants.

@@ -123,7 +123,8 @@ it("projects safe fields, creates private logs, rotates and tolerates a partial 
   for (const name of names) {
     const file = path.join(logger.directory, name);
     expect((await fs.stat(file)).size).toBeLessThanOrEqual(700);
-    expect((await fs.stat(file)).mode & 0o777).toBe(0o600);
+    if (process.platform !== "win32")
+      expect((await fs.stat(file)).mode & 0o777).toBe(0o600);
     const text = await fs.readFile(file, "utf8");
     expect(text).not.toContain("PRIVATE");
   }

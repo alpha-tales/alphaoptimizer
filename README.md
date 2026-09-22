@@ -93,8 +93,8 @@ AlphaOptimizer is designed as a local trusted-process tool.
 By default:
 
 - Full processed outputs are stored locally under `~/.local/share/alphaoptimizer`.
-- The data folder must be private to the current user. On Windows,
-  AlphaOptimizer hardens it with NTFS permissions for the current user,
+- Data, artifact, and metrics folders must be private to the current user. On Windows,
+  AlphaOptimizer hardens each folder with NTFS permissions for the current user,
   `SYSTEM`, and local Administrators.
 - Stored outputs expire after 14 days.
 - The total store budget defaults to 256 MiB.

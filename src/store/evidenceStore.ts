@@ -42,7 +42,7 @@ export class EvidenceStore {
     this.dataDir = dataDir;
     this.artifactDir = path.join(dataDir, "artifacts");
     ensurePrivateDirectory(this.dataDir);
-    fs.mkdirSync(this.artifactDir, { recursive: true, mode: 0o700 });
+    ensurePrivateDirectory(this.artifactDir);
     this.db = new Database(path.join(dataDir, "alphaoptimizer.sqlite"));
     this.db.pragma("busy_timeout = 5000");
     this.db.pragma("journal_mode = DELETE");

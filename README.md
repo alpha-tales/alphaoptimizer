@@ -1,48 +1,87 @@
 # AlphaOptimizer
 
-AlphaOptimizer helps Codex handle very large command and tool outputs without filling the context
-window with noise.
+AlphaOptimizer is an open-source tool from AlphaTales that helps Codex work with large command and
+tool outputs. Instead of sending a huge log or search result straight into the context window,
+AlphaOptimizer keeps the useful parts visible, keeps the original output available for a limited
+time, and can use Jev to help rank what matters.
 
-When a tool returns a long log, test result, search output, or repository scan, AlphaOptimizer keeps
-the important parts visible to Codex and keeps the full output available for a short, bounded time in
-case Codex needs to inspect more of it.
+## How It Works
 
-## What It Does
+Codex often runs commands that produce far more text than it needs: test logs, build errors,
+repository searches, generated reports, or long tool responses. Large outputs can bury the useful
+lines and waste context. AlphaOptimizer sits between those outputs and Codex.
 
-- Accepts large text output from Codex tools, shell commands, or MCP tools.
-- Skips small outputs, failed outputs, structured data, media, and secret-looking content.
-- Stores the full text locally for limited retrieval.
-- Selects the most useful lines for Codex to read immediately.
-- Lets Codex read more from the stored output by artifact ID when needed.
-- Can use Jev to help rank which parts of the output look most relevant.
-- Falls back to deterministic local selection if Jev is disabled or unavailable.
+```mermaid
+flowchart LR
+  A[Command or tool output] --> B{Should AlphaOptimizer process it?}
+  B -- No --> C[Return original output]
+  B -- Yes --> D[Store full output locally with limits]
+  D --> E[Split output into chunks]
+  E --> F[Keep important diagnostics]
+  E --> G{Is Jev enabled?}
+  G -- Yes --> H[Jev ranks relevant chunks]
+  G -- No --> I[Local deterministic ranking]
+  H --> J[Compact result for Codex]
+  I --> J
+  J --> K[Codex can request more by artifact ID]
+  D --> L[Expiry and quota cleanup]
+```
 
-In simple terms: **AlphaOptimizer reduces noise before it reaches Codex, while keeping the original
-output close enough to verify.**
+The process is:
 
-## How The Process Works
+1. A command or tool returns text.
+2. AlphaOptimizer checks whether the output is worth processing.
+3. Small outputs, failed outputs, structured data, media, unsupported results, and secret-looking
+   content pass through unchanged.
+4. Large supported text output is stored in a private local data folder.
+5. The text is split into chunks so it can be searched and selected.
+6. Obvious diagnostics such as failures, expected/actual values, and important matches are preserved.
+7. If Jev is enabled, AlphaOptimizer sends a small bounded set of normal, non-sensitive chunks to Jev
+   for relevance ranking.
+8. If Jev is disabled, unavailable, or times out, AlphaOptimizer uses local deterministic ranking.
+9. Codex receives a shorter result with the selected lines and an artifact ID.
+10. If Codex needs more detail, it can read from the stored original output using that artifact ID.
+11. Stored output expires or is evicted by the configured cleanup rules.
 
-1. A command or tool returns a large text output.
-2. AlphaOptimizer checks whether the output is safe and useful to process.
-3. If it is too small, secret-looking, unsupported, or too large for the configured limit, it passes
-   through unchanged.
-4. Otherwise, AlphaOptimizer saves the full text in a private local data folder.
-5. It splits the text into chunks.
-6. It keeps obvious diagnostics such as failures, expected/actual values, and important matches.
-7. If Jev is enabled, AlphaOptimizer sends a small bounded set of normal, non-sensitive candidate
-   chunks to Jev for relevance ranking.
-8. Codex receives a compact result with selected lines and an artifact ID for follow-up reads.
-9. The stored full output expires or is evicted by the local cleanup rules.
+Jev is optional and disabled by default. AlphaOptimizer works without Jev, but Jev can improve the
+ranking of optional chunks when you explicitly enable data sharing.
 
-## Jev
+## Installation
 
-Jev support is optional and disabled by default.
+```sh
+npm install
+npm run build
+node dist/src/server.js
+```
 
-When enabled, AlphaOptimizer uses Jev to help decide which optional chunks are most relevant to the
-current goal. Jev does not receive outputs marked sensitive or secret. If Jev fails, times out, or is
-not configured, AlphaOptimizer uses its local deterministic selector.
+AlphaOptimizer requires Node `>=22 <23`.
 
-To enable Jev, set:
+## Configuration
+
+By default, AlphaOptimizer allows only the directory it starts in and creates a temporary local
+session ID. For regular use, configure the workspace and session explicitly:
+
+```sh
+ALPHAOPTIMIZER_WORKSPACES="/path/to/project" ALPHAOPTIMIZER_SESSION_ID="project-session" node dist/src/server.js
+```
+
+Common options:
+
+- `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
+- `ALPHAOPTIMIZER_WORKSPACES`: allowed workspace paths.
+- `ALPHAOPTIMIZER_RETENTION_DAYS`: how long stored outputs are kept. Default: `14`.
+- `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget. Default: `268435456`.
+- `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection.
+- `ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET`: approximate selected-output budget.
+- `ALPHAOPTIMIZER_METRICS_ENABLED`: set to `false` to disable local metrics.
+
+To disable capture and selection completely:
+
+```sh
+ALPHAOPTIMIZER_MODE=off
+```
+
+To enable Jev:
 
 ```sh
 ALPHAOPTIMIZER_JEV_ENABLED=true
@@ -53,42 +92,42 @@ ALPHAOPTIMIZER_JEV_API_KEY=your-key
 
 See [Jev provider details](docs/provider-jev.md) before enabling it.
 
-## Local Storage And Cleanup
+## Privacy
 
-AlphaOptimizer stores processed text locally because Codex may need to inspect the full original
-output after receiving the shorter result.
+AlphaOptimizer is designed as a local trusted-process tool.
 
 By default:
 
-- Data is stored under `~/.local/share/alphaoptimizer`.
+- Full processed outputs are stored locally under `~/.local/share/alphaoptimizer`.
 - The data folder must be private to the current user.
 - Stored outputs expire after 14 days.
 - The total store budget defaults to 256 MiB.
-- Raw stored text is capped within that budget.
 - Old unprotected outputs are evicted when the store needs space.
 - Expired outputs are cleaned on startup, before capture, and during regular sweeps.
+- Metrics are local estimates and do not include source text, goals, commands, paths, or API keys.
 
-You can change the behavior:
+Jev is not used unless you explicitly enable it. When enabled, AlphaOptimizer sends only bounded
+candidate chunks labelled `normal`; sensitive and secret outputs are not sent to Jev.
 
-```sh
-ALPHAOPTIMIZER_RETENTION_DAYS=1
-ALPHAOPTIMIZER_MAX_STORE_BYTES=67108864
-ALPHAOPTIMIZER_MODE=off
-```
+## Implemented Safeguards
 
-Use `ALPHAOPTIMIZER_MODE=off` to disable capture and selection completely.
+- Secret-looking outputs are skipped before capture.
+- Outputs marked `secret` are not captured.
+- Oversized artifacts pass through unchanged.
+- Jev is disabled unless all required opt-ins are set.
+- Jev failures fall back to local deterministic selection.
+- Repository search uses workspace checks and avoids symlinks and sensitive paths by default.
+- Local storage has retention and quota limits.
+- AlphaOptimizer does not approve permissions or suppress destructive actions.
+- AlphaOptimizer does not claim actual Codex billing savings; metrics are payload estimates only.
 
-## Installation
+## License
 
-```sh
-npm install
-npm run build
-node dist/src/server.js
-```
+AlphaOptimizer is released under the [MIT License](LICENSE).
 
-The package requires Node `>=22 <23`.
+Copyright (c) 2026 AlphaTales. Created by Libin Joseph.
 
-## MCP Configuration
+## Portable MCP Installation
 
 The shipped `.mcp.json` runs the installed `alphaoptimizer` executable. Install the package into a
 bin directory on the Codex process's `PATH` before enabling its MCP server:
@@ -101,24 +140,16 @@ npm install --global ./alphaoptimizer-0.1.0.tgz
 For a private/local npm installation, add that installation's `node_modules/.bin` to the launcher's
 `PATH`.
 
-## Configuration
-
-By default, the server allows only the directory it starts in and uses a generated process-local
-session ID. Configure a stable project/session scope with:
+## Development
 
 ```sh
-ALPHAOPTIMIZER_WORKSPACES="/path/to/project" ALPHAOPTIMIZER_SESSION_ID="project-session" node dist/src/server.js
+npm install
+npm test
+npm run typecheck
+npm run typecheck:tests
+npm run build
+npm run test:package
 ```
-
-Important options:
-
-- `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
-- `ALPHAOPTIMIZER_WORKSPACES`: allowed workspace paths.
-- `ALPHAOPTIMIZER_RETENTION_DAYS`: local output retention period.
-- `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget.
-- `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection.
-- `ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET`: approximate selected-output budget.
-- `ALPHAOPTIMIZER_METRICS_ENABLED`: set to `false` to disable local metrics.
 
 ## Metrics
 
@@ -133,31 +164,3 @@ npm run metrics -- --recent
 ```
 
 See [metrics details](docs/metrics.md).
-
-## Safety Notes
-
-AlphaOptimizer is designed as a local trusted-process tool.
-
-- It does not approve permissions.
-- It does not suppress destructive actions.
-- It does not guarantee cost savings.
-- It does not claim Jev quality, latency, or billing behavior unless you verify those in your own
-  environment.
-- It avoids known secret-looking content, but pattern matching is not a perfect secret detector.
-
-## Development
-
-```sh
-npm install
-npm test
-npm run typecheck
-npm run typecheck:tests
-npm run build
-npm run test:package
-```
-
-## License
-
-AlphaOptimizer is released under the [MIT License](LICENSE).
-
-Copyright (c) 2026 AlphaTales. Created by Libin Joseph.

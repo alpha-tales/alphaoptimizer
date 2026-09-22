@@ -51,7 +51,7 @@ afterEach(() => {
   for (const value of dirs.splice(0))
     fs.rmSync(value, { recursive: true, force: true });
 });
-it("protects a pending provider artifact across connections, and keeps a response retrieval lease", async () => {
+it("does not store an artifact while Jev is pending or after Jev fails", async () => {
   const db = store();
   const engine = new AlphaOptimizerEngine(
     loadConfig({
@@ -80,26 +80,18 @@ it("protects a pending provider artifact across connections, and keeps a respons
     quotaPolicy: "oldest_unprotected",
   });
   stores.push(second);
-  expect(() =>
-    second.captureObservation(observation("other", "x".repeat(520000)), {
-      captureSource: "fixture",
-    }),
-  ).toThrow(/quota/);
+  expect(second.db.prepare("select count(*) n from artifacts").get()).toEqual({
+    n: 0,
+  });
   reject(new Error("synthetic outage"));
   const result = await first;
-  expect(result.artifact).not.toBeNull();
-  expect(second.getArtifact(result.artifact!.artifactId)).not.toBeNull();
-  expect(() =>
-    second.captureObservation(observation("other", "x".repeat(520000)), {
-      captureSource: "fixture",
-    }),
-  ).toThrow(/quota/);
-  // Simulates an owner that crashed: no release, bounded TTL must make space reclaimable.
-  second.db.prepare("update artifact_leases set expires_at = 0").run();
-  second.captureObservation(observation("other", "x".repeat(520000)), {
-    captureSource: "fixture",
+  expect(result.artifact).toBeNull();
+  expect(result.selection).toBeNull();
+  expect(result.rendered).toBe("routine ".repeat(1000));
+  expect(result.fallbackReason).toContain("jev unavailable");
+  expect(second.db.prepare("select count(*) n from artifacts").get()).toEqual({
+    n: 0,
   });
-  expect(db.getArtifact(result.artifact!.artifactId)).toBeNull();
 });
 it("returns match-centered windows with exact byte/line ranges and usable continuation", () => {
   const db = store();

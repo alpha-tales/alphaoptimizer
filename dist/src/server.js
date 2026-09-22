@@ -39,7 +39,7 @@ function serverScope(workspace) {
 }
 server.registerTool("select_evidence", {
     title: "Select Evidence",
-    description: "Capture textual tool output, store it durably, and return deterministic evidence under budget.",
+    description: "Use Jev to rank textual tool output, store it durably, and return selected evidence under budget.",
     inputSchema: {
         workspace: z.string(),
         sessionId: z.string().optional(),

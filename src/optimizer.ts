@@ -9,7 +9,7 @@ import {
 } from "./contracts/schemas.js";
 import { chunkText } from "./parsers/text.js";
 import { EvidenceStore } from "./store/evidenceStore.js";
-import { estimateTokens } from "./util/hash.js";
+import { estimateTokens, sha256, shortId } from "./util/hash.js";
 import {
   selectDeterministicAsync,
   renderSelection,
@@ -179,18 +179,108 @@ export class AlphaOptimizerEngine {
       };
     }
 
+    const estimatedTokens = estimateTokens(observation.content);
+    const artifactId = shortId(
+      observation.workspaceId,
+      observation.sessionId,
+      observation.toolCallId,
+      sha256(observation.content),
+    );
+    const chunks = chunkText(artifactId, observation.content);
+    if (
+      estimatedTokens < this.config.selectionThresholdTokens ||
+      chunks.length === 0
+    ) {
+      return {
+        mode: this.config.mode,
+        artifact: null,
+        selection: null,
+        rendered: observation.content,
+        fallbackReason: "output below selection threshold; original content preserved",
+      };
+    }
+
+    if (
+      !this.config.jevEnabled ||
+      !this.config.jevApiKey ||
+      observation.privacyClass !== "normal"
+    ) {
+      return {
+        mode: this.config.mode,
+        artifact: null,
+        selection: null,
+        rendered: observation.content,
+        fallbackReason: "jev unavailable; original content preserved",
+      };
+    }
+
+    let relevantIds: Set<string>;
+    const providerStart = performance.now();
+    try {
+      const provider = new JevProvider({
+        enabled: true,
+        endpoint: this.config.jevEndpoint,
+        apiKey: this.config.jevApiKey,
+      });
+      const candidates = chunks
+        .filter((chunk) => !chunk.pinnedEvidence)
+        .slice(0, 40)
+        .map((chunk) => ({ id: chunk.chunkId, text: chunk.text }));
+      if (!candidates.length) {
+        if (options.metric) options.metric.provider = "skipped";
+        return {
+          mode: this.config.mode,
+          artifact: null,
+          selection: null,
+          rendered: observation.content,
+          fallbackReason: "jev unavailable; original content preserved",
+        };
+      }
+      const decisions = await provider.classify({
+        goal: options.goal ?? "",
+        candidates,
+        privacyClass: observation.privacyClass,
+        signal: options.signal,
+        onRequest: () => {
+          if (options.metric) options.metric.providerAttempted = true;
+        },
+        onUsage: (usage) => {
+          if (options.metric) {
+            options.metric.providerInputTokens = usage.input_tokens;
+            options.metric.providerOutputTokens = usage.output_tokens;
+          }
+        },
+      });
+      relevantIds = new Set(
+        decisions
+          .filter((decision) => decision.verdict === "relevant")
+          .map((decision) => decision.id),
+      );
+      if (options.metric) options.metric.provider = "success";
+    } catch {
+      if (options.metric) options.metric.provider = "fallback";
+      return {
+        mode: this.config.mode,
+        artifact: null,
+        selection: null,
+        rendered: observation.content,
+        fallbackReason: "jev unavailable; original content preserved",
+      };
+    } finally {
+      if (options.metric)
+        options.metric.providerDurationMs = performance.now() - providerStart;
+    }
+
     const expiresAt = new Date(
       Date.now() + this.config.retentionDays * 24 * 60 * 60 * 1000,
     ).toISOString();
     let artifact: ArtifactRecord;
-    let chunks;
     try {
       artifact = this.store.captureObservation(observation, {
         captureSource: options.captureSource ?? "mcp",
         expiresAt,
         leaseId: options.leaseId,
       });
-      chunks = chunkText(artifact.artifactId, observation.content);
     } catch (error) {
       process.stderr.write(
         `alphaoptimizer: capture fallback: ${(error as Error).message}\n`,
@@ -203,74 +293,12 @@ export class AlphaOptimizerEngine {
         fallbackReason: "capture failed; original content preserved",
       };
     }
-
-    const estimatedTokens = estimateTokens(observation.content);
-    if (
-      estimatedTokens < this.config.selectionThresholdTokens ||
-      chunks.length === 0
-    ) {
-      return {
-        mode: this.config.mode,
-        artifact,
-        selection: null,
-        rendered: observation.content,
-        fallbackReason: null,
-      };
-    }
-
-    let relevantIds: Set<string> | undefined;
-    let providerStatus: string | undefined;
-    if (this.config.jevEnabled && observation.privacyClass === "normal") {
-      const providerStart = performance.now();
-      try {
-        const provider = new JevProvider({
-          enabled: true,
-          endpoint: this.config.jevEndpoint,
-          apiKey: this.config.jevApiKey,
-        });
-        const candidates = chunks
-          .filter((chunk) => !chunk.pinnedEvidence)
-          .slice(0, 40)
-          .map((chunk) => ({ id: chunk.chunkId, text: chunk.text }));
-        const decisions = await provider.classify({
-          goal: options.goal ?? "",
-          candidates,
-          privacyClass: observation.privacyClass,
-          signal: options.signal,
-          onRequest: () => {
-            if (options.metric) options.metric.providerAttempted = true;
-          },
-          onUsage: (usage) => {
-            if (options.metric) {
-              options.metric.providerInputTokens = usage.input_tokens;
-              options.metric.providerOutputTokens = usage.output_tokens;
-            }
-          },
-        });
-        relevantIds = new Set(
-          decisions
-            .filter((decision) => decision.verdict === "relevant")
-            .map((decision) => decision.id),
-        );
-        providerStatus = decisions.length
-          ? "jev-used"
-          : "jev-no-optional-candidates";
-        if (options.metric)
-          options.metric.provider = decisions.length ? "success" : "skipped";
-      } catch {
-        providerStatus = "jev-unavailable-deterministic-fallback";
-        if (options.metric) options.metric.provider = "fallback";
-      } finally {
-        if (options.metric)
-          options.metric.providerDurationMs = performance.now() - providerStart;
-      }
-    }
     options.signal?.throwIfAborted();
     const selection = await selectDeterministicAsync(chunks, {
       tokenBudget: this.config.selectionTokenBudget,
       goal: options.goal,
       relevantIds,
-      providerStatus,
+      providerStatus: "jev-used",
       signal: options.signal,
     });
     return {

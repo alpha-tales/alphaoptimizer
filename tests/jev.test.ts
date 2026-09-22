@@ -69,7 +69,7 @@ it("rejects mismatched answers, oversized payloads, and unverified destinations"
     ),
   ).rejects.toThrow(/verified/);
 });
-it("uses deterministic fallback when provider fails, retaining pinned failures", async () => {
+it("passes through unchanged when provider fails", async () => {
   const fs = await import("node:fs");
   const os = await import("node:os");
   const path = await import("node:path");
@@ -105,9 +105,9 @@ it("uses deterministic fallback when provider fails, retaining pinned failures",
       { goal: "critical" },
     );
     expect(result.rendered).toContain("FAIL critical diagnostic");
-    expect(result.selection?.reasonCodes).toContain(
-      "jev-unavailable-deterministic-fallback",
-    );
+    expect(result.selection).toBeNull();
+    expect(result.artifact).toBeNull();
+    expect(result.fallbackReason).toContain("jev unavailable");
   } finally {
     engine.store.close();
     fs.rmSync(dir, { recursive: true, force: true });

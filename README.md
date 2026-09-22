@@ -20,9 +20,8 @@ flowchart LR
   E --> F[Keep important diagnostics]
   E --> G{Is Jev enabled?}
   G -- Yes --> H[Jev ranks relevant chunks]
-  G -- No --> I[Local deterministic ranking]
+  G -- No --> I[Return original output]
   H --> J[Compact result for Codex]
-  I --> J
   J --> K[Codex can request more by artifact ID]
   D --> L[Expiry and quota cleanup]
 ```
@@ -38,13 +37,13 @@ The process is:
 6. Obvious diagnostics such as failures, expected/actual values, and important matches are preserved.
 7. If Jev is enabled, AlphaOptimizer sends a small bounded set of normal, non-sensitive chunks to Jev
    for relevance ranking.
-8. If Jev is disabled, unavailable, or times out, AlphaOptimizer uses local deterministic ranking.
-9. Codex receives a shorter result with the selected lines and an artifact ID.
+8. If Jev is missing, unavailable, or times out, AlphaOptimizer returns the original output unchanged.
+9. After a successful Jev response, Codex receives a shorter result with selected lines and an artifact ID.
 10. If Codex needs more detail, it can read from the stored original output using that artifact ID.
 11. Stored output expires or is evicted by the configured cleanup rules.
 
 Jev is enabled by providing `ALPHAOPTIMIZER_JEV_API_KEY`. If the key is missing, unavailable, or the
-request fails, AlphaOptimizer falls back to local deterministic ranking.
+request fails, AlphaOptimizer returns the original output unchanged.
 
 ## Installation
 
@@ -109,7 +108,7 @@ candidate chunks labelled `normal`; sensitive and secret outputs are not sent to
 - Outputs marked `secret` are not captured.
 - Oversized artifacts pass through unchanged.
 - Jev is used only when an API key is configured.
-- Jev failures fall back to local deterministic selection.
+- Jev failures return the original output unchanged.
 - Repository search uses workspace checks and avoids symlinks and sensitive paths by default.
 - Local storage has retention and quota limits.
 - AlphaOptimizer does not approve permissions or suppress destructive actions.

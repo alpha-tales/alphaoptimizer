@@ -232,8 +232,31 @@ it("records unknown provider usage on failure, cancellation, and no request for 
 });
 
 it("does not let an unavailable metrics sink change the engine result", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url, init) => {
+      const questions = JSON.parse((init as RequestInit).body as string)
+        .questions;
+      return new Response(
+        JSON.stringify({
+          model: "jev-1.13.0",
+          answers: Object.fromEntries(
+            Object.keys(questions).map((key) => [
+              key,
+              { type: "noul", noul: 0.95 },
+            ]),
+          ),
+          usage: { input_tokens: 1, output_tokens: 0 },
+        }),
+      );
+    }),
+  );
   const engine = new AlphaOptimizerEngine(
-    loadConfig({ ALPHAOPTIMIZER_DATA_DIR: await temp() }),
+    loadConfig({
+      ALPHAOPTIMIZER_DATA_DIR: await temp(),
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
+      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
+    }),
     undefined,
     {
       record: () => {

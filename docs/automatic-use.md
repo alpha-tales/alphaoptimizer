@@ -82,8 +82,8 @@ untrusted hook changes, and host errors leave normal tool behavior intact.
 - The registered hook timeout is five seconds; the server fails open on processing errors.
 
 Automatic processing uses Jev when `ALPHAOPTIMIZER_JEV_API_KEY` is configured and the output is
-eligible. If Jev is unavailable, disabled, or not configured, automatic processing falls back to
-deterministic local selection.
+eligible. If Jev is unavailable, disabled, or not configured, automatic processing leaves the
+original output unchanged.
 
 ## Logs
 

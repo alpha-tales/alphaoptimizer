@@ -39,14 +39,9 @@ it.each([true, false])(
       const receipt = JSON.parse(
         (captured.content as Array<{ text: string }>)[0].text,
       );
-      const read = await client.callTool({
-        name: "read_artifact",
-        arguments: {
-          workspace: process.cwd(),
-          artifactId: receipt.artifact.artifactId,
-        },
-      });
-      expect(read.isError).not.toBe(true);
+      expect(receipt.artifact).toBeNull();
+      expect(receipt.selectedText).toBe("PRIVATE_TEST_DATA\n".repeat(100));
+      expect(receipt.fallbackReason).toContain("jev unavailable");
       const failed = await client.callTool({
         name: "read_artifact",
         arguments: {
@@ -57,7 +52,7 @@ it.each([true, false])(
       expect(failed.isError).toBe(true);
       await client.close();
       const { events } = await readMetrics(path.join(dir, "metrics"));
-      expect(events.length).toBe(enabled ? 4 : 0);
+      expect(events.length).toBe(enabled ? 3 : 0);
       if (enabled) {
         expect(JSON.stringify(events)).not.toMatch(
           /PRIVATE_TEST_DATA|SECRET_COMMAND/,
@@ -68,7 +63,7 @@ it.each([true, false])(
         expect(
           summary.toolResponses.find((e) => e.operation === "read_artifact")
             ?.calls,
-        ).toBe(2);
+        ).toBe(1);
         expect(
           events
             .filter((e) => e.kind === "tool" && e.status === "ok")

@@ -61,20 +61,23 @@ try {
   try {
     await client.connect(transport);
     assert.ok((await client.listTools()).tools.some((tool) => tool.name === "process_tool_result"));
+    const content = "synthetic installed evidence\n".repeat(1000);
     const result = await client.callTool({
       name: "select_evidence",
-      arguments: { workspace, content: "synthetic installed evidence" },
+      arguments: { workspace, content },
     });
     assert.ok(!result.isError);
     const receipt = JSON.parse(
       (result.content as Array<{ text: string }>)[0].text,
     );
-    assert.ok(receipt.artifact.artifactId);
+    assert.equal(receipt.artifact, null);
+    assert.equal(receipt.selectedText, content);
+    assert.match(receipt.fallbackReason, /jev unavailable/);
   } finally {
     await client.close();
   }
   console.log(
-    "PASS: packed package installed separately; shipped MCP command initialized from unrelated cwd and captured evidence.",
+    "PASS: packed package installed separately; shipped MCP command initialized from unrelated cwd and passed through without Jev.",
   );
 } finally {
   await fs.rm(temporary, { recursive: true, force: true });

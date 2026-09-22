@@ -42,7 +42,7 @@ function setup(autoMode = "filter") {
   resources.push({ engine, dir });
   const text =
     Array.from(
-      { length: 240 },
+      { length: 90 },
       (_, i) =>
         `Routine line ${i}: ` + "ordinary background processing ".repeat(3),
     ).join("\n") + "\nERROR keep this diagnostic\n";
@@ -58,10 +58,32 @@ function setup(autoMode = "filter") {
   };
   return { engine, event, metrics, dir, text };
 }
+
+function mockJev(probability = 0.1) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url, init) => {
+      const questions = JSON.parse((init as RequestInit).body as string)
+        .questions;
+      return new Response(
+        JSON.stringify({
+          model: "jev-1.13.0",
+          answers: Object.fromEntries(
+            Object.keys(questions).map((key) => [
+              key,
+              { type: "noul", noul: probability },
+            ]),
+          ),
+          usage: { input_tokens: 1, output_tokens: 0 },
+        }),
+      );
+    }),
+  );
+}
+
 it("automatically reduces plain text, keeps diagnostics, and makes the exact original retrievable", async () => {
   const { engine, event, metrics, text } = setup();
-  const fetch = vi.fn();
-  vi.stubGlobal("fetch", fetch);
+  mockJev();
   const result = await processToolResult(engine, event);
   expect(result.continue).toBe(false);
   expect(result.stopReason).toContain("ERROR keep this diagnostic");
@@ -71,7 +93,6 @@ it("automatically reduces plain text, keeps diagnostics, and makes the exact ori
     engine.store.readArtifactRange(recovery.artifactId, 0, 100000).text,
   ).toBe(text);
   expect(result).not.toHaveProperty("hookSpecificOutput");
-  expect(fetch).not.toHaveBeenCalled();
   expect(metrics.at(-1)).toMatchObject({
     kind: "hook",
     decision: "replacement_requested",
@@ -140,6 +161,7 @@ it("fails open on storage failure and abort", async () => {
 });
 it("accepts any cwd by default and enforces an explicit allowlist when configured", async () => {
   const { event, text } = setup();
+  mockJev();
   const unrestrictedStore = fs.mkdtempSync(
     path.join(os.tmpdir(), "alpha-global-store-"),
   );
@@ -147,6 +169,7 @@ it("accepts any cwd by default and enforces an explicit allowlist when configure
     loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: unrestrictedStore,
       ALPHAOPTIMIZER_AUTO_MODE: "filter",
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
     }),
   );
   resources.push({ engine: unrestricted, dir: unrestrictedStore });
@@ -191,6 +214,7 @@ it("preserves native shell status when the hook does not expose it, and never fi
 });
 it("recognizes a cwd beneath the authorized root and accepts text-only MCP output", async () => {
   const { engine, event, dir, text } = setup();
+  mockJev();
   const cwd = path.join(dir, "sub");
   fs.mkdirSync(cwd);
   const result = await processToolResult(engine, {

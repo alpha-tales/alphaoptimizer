@@ -1,19 +1,45 @@
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../src/config.js";
 import { VERSION } from "../src/contracts/schemas.js";
 import { AlphaOptimizerEngine } from "../src/optimizer.js";
 import { sha256 } from "../src/util/hash.js";
 import { estimateTokens } from "../src/util/hash.js";
 
+function mockJev(probability = 0.95) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url, init) => {
+      const questions = JSON.parse((init as RequestInit).body as string)
+        .questions;
+      return new Response(
+        JSON.stringify({
+          model: "jev-1.13.0",
+          answers: Object.fromEntries(
+            Object.keys(questions).map((key) => [
+              key,
+              { type: "noul", noul: probability },
+            ]),
+          ),
+          usage: { input_tokens: 1, output_tokens: 0 },
+        }),
+      );
+    }),
+  );
+}
+
 describe("deterministic evidence selection", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("retains failure evidence and allows original retrieval", async () => {
+    mockJev();
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_MODE: "observe",
       ALPHAOPTIMIZER_DATA_DIR: path.join(os.tmpdir(), `alphaoptimizer-${Date.now()}`),
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "80"
+      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "80",
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic"
     }));
     const content = [
       ...Array.from({ length: 80 }, (_, index) => `noise line ${index}`),
@@ -46,11 +72,13 @@ describe("deterministic evidence selection", () => {
   });
 
   it("retains later pinned failures even when the optional budget is exhausted", async () => {
+    mockJev();
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_MODE: "observe",
       ALPHAOPTIMIZER_DATA_DIR: path.join(os.tmpdir(), `alphaoptimizer-${crypto.randomUUID()}`),
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "40"
+      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "40",
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic"
     }));
     const content = [
       "ERROR first failure",
@@ -78,11 +106,13 @@ describe("deterministic evidence selection", () => {
   });
 
   it("keeps adjacent failure diagnostics across chunk boundaries", async () => {
+    mockJev();
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_MODE: "observe",
       ALPHAOPTIMIZER_DATA_DIR: path.join(os.tmpdir(), `alphaoptimizer-${crypto.randomUUID()}`),
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "1500"
+      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "1500",
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic"
     }));
     const content = [
       ...Array.from({ length: 39 }, (_, index) => `noise line ${index}`),
@@ -112,11 +142,13 @@ describe("deterministic evidence selection", () => {
   });
 
   it("accounts for rendered response overhead in the token estimate", async () => {
+    mockJev();
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_MODE: "observe",
       ALPHAOPTIMIZER_DATA_DIR: path.join(os.tmpdir(), `alphaoptimizer-${crypto.randomUUID()}`),
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "20"
+      ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET: "20",
+      ALPHAOPTIMIZER_JEV_API_KEY: "synthetic"
     }));
     const result = await engine.captureAndSelect({
       schemaVersion: VERSION,

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadConfig } from "../src/config.js";
 import { VERSION } from "../src/contracts/schemas.js";
 import { AlphaOptimizerEngine } from "../src/optimizer.js";
@@ -13,7 +13,35 @@ function tmpDir(prefix: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
 }
 
+function jevEnv() {
+  return { ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" };
+}
+
+function mockJev(probability = 0.95) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_url, init) => {
+      const questions = JSON.parse((init as RequestInit).body as string)
+        .questions;
+      return new Response(
+        JSON.stringify({
+          model: "jev-1.13.0",
+          answers: Object.fromEntries(
+            Object.keys(questions).map((key) => [
+              key,
+              { type: "noul", noul: probability },
+            ]),
+          ),
+          usage: { input_tokens: 1, output_tokens: 0 },
+        }),
+      );
+    }),
+  );
+}
+
 describe("security boundaries", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   it("does not return symlinked or sensitive fallback files", async () => {
     const workspace = tmpDir("alphaoptimizer-ws-");
     const outside = tmpDir("alphaoptimizer-outside-");
@@ -37,8 +65,10 @@ describe("security boundaries", () => {
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: tmpDir("alphaoptimizer-store-"),
       ALPHAOPTIMIZER_WORKSPACES: `${workspaceA}:${workspaceB}`,
-      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1"
+      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
+      ...jevEnv()
     }));
+    mockJev();
 
     const captured = await engine.captureAndSelect({
       schemaVersion: VERSION,
@@ -108,8 +138,10 @@ describe("security boundaries", () => {
   it("paginates artifact text on UTF-8 boundaries", async () => {
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: tmpDir("alphaoptimizer-utf8-"),
-      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1"
+      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
+      ...jevEnv()
     }));
+    mockJev();
     const content = "alpha 😊 omega";
     const captured = await engine.captureAndSelect({
       schemaVersion: VERSION,
@@ -139,8 +171,10 @@ describe("security boundaries", () => {
   it("makes UTF-8 progress for leading multibyte characters and rejects mid-character cursors", async () => {
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: tmpDir("alphaoptimizer-utf8-progress-"),
-      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1"
+      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
+      ...jevEnv()
     }));
+    mockJev();
     const captured = await engine.captureAndSelect({
       schemaVersion: VERSION,
       workspaceId: process.cwd(),
@@ -168,8 +202,10 @@ describe("security boundaries", () => {
   it("bounds artifact search results by maxBytes", async () => {
     const engine = new AlphaOptimizerEngine(loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: tmpDir("alphaoptimizer-search-bound-"),
-      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1"
+      ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
+      ...jevEnv()
     }));
+    mockJev();
     const captured = await engine.captureAndSelect({
       schemaVersion: VERSION,
       workspaceId: process.cwd(),
@@ -181,7 +217,7 @@ describe("security boundaries", () => {
       responseType: "text",
       captureCompleteness: "complete",
       privacyClass: "normal",
-      content: `needle ${"x".repeat(150000)}`
+      content: `needle ${"x".repeat(5000)}`
     });
     const search = engine.store.searchArtifactText(captured.artifact!.artifactId, "needle", 128, {
       workspaceId: fs.realpathSync(process.cwd()),

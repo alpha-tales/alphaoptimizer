@@ -132,7 +132,7 @@ export async function processToolResult(engine, raw, signal) {
             SENSITIVE_INPUT.test(input) ||
             /vault|credential|password|secret|mail|calendar|patient|medical/i.test(event.tool_name))
             return pass("sensitive");
-        // Accept cwd descendants of an already-authorized server workspace, not arbitrary hook-supplied roots.
+        // Global plugin mode: accept any real cwd unless an explicit allowlist is configured.
         const cwd = await fs.realpath(event.cwd);
         let workspace;
         for (const root of engine.config.workspaceAllowlist) {
@@ -146,7 +146,7 @@ export async function processToolResult(engine, raw, signal) {
                 break;
             }
         }
-        if (!workspace && engine.config.unrestrictedWorkspaces)
+        if (!workspace && engine.config.workspaceAllowlist.length === 0)
             workspace = cwd;
         if (!workspace)
             return pass("workspace");
@@ -154,7 +154,7 @@ export async function processToolResult(engine, raw, signal) {
         const selector = new AlphaOptimizerEngine({
             ...engine.config,
             mode: engine.config.autoMode,
-            jevEnabled: engine.config.jevEnabled && engine.config.autoJevEnabled,
+            jevEnabled: engine.config.jevEnabled,
             selectionTokenBudget: Math.min(engine.config.selectionTokenBudget, 800),
             selectionThresholdTokens: Math.min(engine.config.selectionThresholdTokens, 1500),
         }, engine.store, engine.metrics);
@@ -169,7 +169,7 @@ export async function processToolResult(engine, raw, signal) {
             exitCode: result.exitCode,
             responseType: "text",
             captureCompleteness: "unavailable",
-            privacyClass: engine.config.autoJevEnabled ? "normal" : "sensitive",
+            privacyClass: "normal",
             content: result.text,
         }, {
             captureSource: "hook",

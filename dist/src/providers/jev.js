@@ -19,8 +19,6 @@ export class JevProvider {
     async classify(input) {
         if (!this.config.enabled)
             return [];
-        if (!this.config.dataSharing || !this.config.termsAccepted)
-            throw new Error("Jev requires explicit data-sharing and terms acceptance");
         if (input.privacyClass !== "normal")
             return [];
         if (!this.config.apiKey)

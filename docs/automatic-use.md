@@ -71,8 +71,8 @@ untrusted hook changes, and host errors leave normal tool behavior intact.
   exit code zero is eligible. Missing status and failed commands remain unchanged.
 - Skip known credential-related tools, commands, and secret-like output before storing it. Pattern
   detection is conservative but not a universal secret detector; automatic processing stays local.
-- The hook's cwd must belong to an already-authorized server workspace. Nested directories are
-  resolved to that workspace; incoming hook fields cannot grant another workspace access.
+- By default, the hook accepts any real cwd so the plugin works globally across Codex projects.
+  If `ALPHAOPTIMIZER_WORKSPACES` is set, the hook accepts only those roots and their descendants.
 - Store exactly the text visible to the hook. Do not call it complete process output: the host may
   already have limited it. Record capture completeness as unavailable and provide a recovery handle.
 - Use an 800-token maximum selection target, preserve mandatory diagnostics, and pass through
@@ -81,10 +81,9 @@ untrusted hook changes, and host errors leave normal tool behavior intact.
   Original available status and raw-retrieval arguments are included in the feedback.
 - The registered hook timeout is five seconds; the server fails open on processing errors.
 
-Automatic processing uses deterministic local selection by default, even when explicit Jev calls
-are enabled. An additional `ALPHAOPTIMIZER_AUTO_JEV_ENABLED=true` opt-in permits automatic candidate
-sharing, subject to the existing Jev enable, data-sharing and terms flags. Do not enable it based on
-secret-pattern filtering alone; review the data sources. This installation does not set that flag.
+Automatic processing uses Jev when `ALPHAOPTIMIZER_JEV_API_KEY` is configured and the output is
+eligible. If Jev is unavailable, disabled, or not configured, automatic processing falls back to
+deterministic local selection.
 
 ## Logs
 
@@ -99,4 +98,5 @@ delivery or whole-task savings**. Host timeouts, other hooks, and code-mode scri
 Selections made by the processor have source `hook`. Metrics exclude raw commands, output, and keys.
 
 Use the host probe to verify delivery behavior after a Codex upgrade. Use paired real tasks and
-host-reported usage to measure actual savings. The default local path avoids Jev network latency.
+host-reported usage to measure actual savings. Jev availability and latency depend on the configured
+provider account and network.

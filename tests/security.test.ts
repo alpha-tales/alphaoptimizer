@@ -213,7 +213,8 @@ describe("security boundaries", () => {
   });
 
   it("parses boolean environment variables strictly", () => {
-    expect(loadConfig({ ALPHAOPTIMIZER_JEV_ENABLED: "false" }).jevEnabled).toBe(false);
-    expect(loadConfig({ ALPHAOPTIMIZER_JEV_ENABLED: "true" }).jevEnabled).toBe(true);
+    expect(loadConfig({}).workspaceAllowlist).toEqual([]);
+    expect(loadConfig({ ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" }).jevEnabled).toBe(true);
+    expect(loadConfig({ ALPHAOPTIMIZER_JEV_ENABLED: "false", ALPHAOPTIMIZER_JEV_API_KEY: "synthetic" }).jevEnabled).toBe(false);
   });
 });

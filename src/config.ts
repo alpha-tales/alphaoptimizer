@@ -39,14 +39,10 @@ export const ConfigSchema = z.object({
     .positive()
     .default(512 * 1024),
   workspaceAllowlist: z.array(z.string()).default([]),
-  unrestrictedWorkspaces: StrictBooleanSchema,
   sessionId: z.string().min(1),
   metricsEnabled: z.boolean().default(true),
   autoMode: z.enum(["off", "observe", "filter"]).default("off"),
-  autoJevEnabled: z.boolean().default(false),
-  jevEnabled: StrictBooleanSchema,
-  jevDataSharing: StrictBooleanSchema,
-  jevTermsAccepted: StrictBooleanSchema,
+  jevEnabled: z.boolean(),
   jevEndpoint: z.string().url().optional(),
   jevApiKey: z.string().optional(),
 });
@@ -56,17 +52,12 @@ export type AlphaOptimizerConfig = z.infer<typeof ConfigSchema>;
 export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): AlphaOptimizerConfig {
-  const unrestrictedWorkspaces = StrictBooleanSchema.parse(
-    env.ALPHAOPTIMIZER_UNRESTRICTED_WORKSPACES,
-  );
   const configuredAllowlist =
     env.ALPHAOPTIMIZER_WORKSPACES?.split(":").filter(Boolean);
-  const allowlist =
-    configuredAllowlist && configuredAllowlist.length > 0
-      ? configuredAllowlist
-      : unrestrictedWorkspaces
-        ? []
-        : [process.cwd()];
+  const jevExplicit = env.ALPHAOPTIMIZER_JEV_ENABLED
+    ? StrictBooleanSchema.parse(env.ALPHAOPTIMIZER_JEV_ENABLED)
+    : undefined;
+  const jevApiKey = env.ALPHAOPTIMIZER_JEV_API_KEY;
 
   return ConfigSchema.parse({
     mode: env.ALPHAOPTIMIZER_MODE,
@@ -78,20 +69,14 @@ export function loadConfig(
     selectionTokenBudget: env.ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET,
     selectionThresholdTokens: env.ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS,
     repositoryMaxFileBytes: env.ALPHAOPTIMIZER_REPOSITORY_MAX_FILE_BYTES,
-    workspaceAllowlist: allowlist,
-    unrestrictedWorkspaces,
+    workspaceAllowlist: configuredAllowlist ?? [],
     sessionId: env.ALPHAOPTIMIZER_SESSION_ID ?? `server-${crypto.randomUUID()}`,
     metricsEnabled: StrictBooleanSchema.parse(
       env.ALPHAOPTIMIZER_METRICS_ENABLED ?? "true",
     ),
-    jevEnabled: env.ALPHAOPTIMIZER_JEV_ENABLED,
+    jevEnabled: jevExplicit ?? Boolean(jevApiKey),
     autoMode: env.ALPHAOPTIMIZER_AUTO_MODE,
-    autoJevEnabled: StrictBooleanSchema.parse(
-      env.ALPHAOPTIMIZER_AUTO_JEV_ENABLED,
-    ),
-    jevDataSharing: env.ALPHAOPTIMIZER_JEV_DATA_SHARING,
-    jevTermsAccepted: env.ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED,
     jevEndpoint: env.ALPHAOPTIMIZER_JEV_ENDPOINT,
-    jevApiKey: env.ALPHAOPTIMIZER_JEV_API_KEY,
+    jevApiKey,
   });
 }

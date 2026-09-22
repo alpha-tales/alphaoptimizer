@@ -57,9 +57,6 @@ it("protects a pending provider artifact across connections, and keeps a respons
     loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: db.dataDir,
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-      ALPHAOPTIMIZER_JEV_ENABLED: "true",
-      ALPHAOPTIMIZER_JEV_DATA_SHARING: "true",
-      ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED: "true",
       ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
     }),
     db,

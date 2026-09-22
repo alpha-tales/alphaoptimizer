@@ -22,16 +22,13 @@ remnants.
 ## Important Environment Variables
 
 - `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
-- `ALPHAOPTIMIZER_WORKSPACES`: colon-separated workspace allowlist. If unset, the server allows
-  only its startup working directory.
+- `ALPHAOPTIMIZER_WORKSPACES`: optional colon-separated workspace allowlist. If unset, the server
+  works globally across project directories.
 - `ALPHAOPTIMIZER_SESSION_ID`: optional stable server-bound session ID. If unset, each server
   process creates a fresh local session.
-- `ALPHAOPTIMIZER_UNRESTRICTED_WORKSPACES`: explicit development escape hatch. Set to `true` to
-  allow arbitrary workspaces.
 - `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection is attempted.
 - `ALPHAOPTIMIZER_SELECTION_TOKEN_BUDGET`: approximate selected-output budget.
-- `ALPHAOPTIMIZER_JEV_ENABLED`: strict boolean. Keep `false` until provider API, retention,
-  pricing, and schemas are verified.
+- `ALPHAOPTIMIZER_JEV_API_KEY`: enables Jev relevance ranking.
 
 ## Removal
 
@@ -71,7 +68,7 @@ Both paths apply the same exclusions and ignore rules. Hashes use the exact buff
 
 ## Optional Jev
 
-See [provider setup and verified terms](provider-jev.md). It remains disabled without explicit opt-ins.
+See [provider setup](provider-jev.md). It is enabled when `ALPHAOPTIMIZER_JEV_API_KEY` is configured.
 
 ## Request protection and retrieval lifetime
 

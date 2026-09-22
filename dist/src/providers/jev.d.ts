@@ -10,8 +10,6 @@ export declare class JevProvider {
         endpoint?: string;
         apiKey?: string;
         enabled: boolean;
-        dataSharing?: boolean;
-        termsAccepted?: boolean;
         model?: string;
         maxRequestBytes?: number;
     });

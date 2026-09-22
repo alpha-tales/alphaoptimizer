@@ -27,8 +27,6 @@ export class JevProvider {
       endpoint?: string;
       apiKey?: string;
       enabled: boolean;
-      dataSharing?: boolean;
-      termsAccepted?: boolean;
       model?: string;
       maxRequestBytes?: number;
     },
@@ -42,10 +40,6 @@ export class JevProvider {
     privacyClass?: "normal" | "sensitive" | "secret";
   }): Promise<JevDecision[]> {
     if (!this.config.enabled) return [];
-    if (!this.config.dataSharing || !this.config.termsAccepted)
-      throw new Error(
-        "Jev requires explicit data-sharing and terms acceptance",
-      );
     if (input.privacyClass !== "normal") return [];
     if (!this.config.apiKey) throw new Error("Jev API key is not configured");
     if ((this.config.endpoint ?? JEV_ENDPOINT) !== JEV_ENDPOINT)

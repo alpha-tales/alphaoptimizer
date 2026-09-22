@@ -3,8 +3,6 @@ import { JevProvider, JEV_ENDPOINT } from "../src/providers/jev.js";
 const config = {
   enabled: true,
   apiKey: "synthetic",
-  dataSharing: true,
-  termsAccepted: true,
 };
 const input = {
   goal: "find failure",
@@ -12,12 +10,12 @@ const input = {
   privacyClass: "normal" as const,
 };
 afterEach(() => vi.unstubAllGlobals());
-it("does not share without opt-ins, or for sensitive evidence", async () => {
+it("does not share without an API key, or for sensitive evidence", async () => {
   const fetch = vi.fn();
   vi.stubGlobal("fetch", fetch);
   await expect(
-    new JevProvider({ ...config, dataSharing: false }).classify(input),
-  ).rejects.toThrow(/explicit/);
+    new JevProvider({ enabled: true }).classify(input),
+  ).rejects.toThrow(/API key/);
   expect(
     await new JevProvider(config).classify({
       ...input,
@@ -81,9 +79,6 @@ it("uses deterministic fallback when provider fails, retaining pinned failures",
   const engine = new AlphaOptimizerEngine(
     loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: dir,
-      ALPHAOPTIMIZER_JEV_ENABLED: "true",
-      ALPHAOPTIMIZER_JEV_DATA_SHARING: "true",
-      ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED: "true",
       ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
       ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
     }),

@@ -152,7 +152,7 @@ export async function processToolResult(
     )
       return pass("sensitive");
 
-    // Accept cwd descendants of an already-authorized server workspace, not arbitrary hook-supplied roots.
+    // Global plugin mode: accept any real cwd unless an explicit allowlist is configured.
     const cwd = await fs.realpath(event.cwd);
     let workspace: string | undefined;
     for (const root of engine.config.workspaceAllowlist) {
@@ -168,14 +168,15 @@ export async function processToolResult(
         break;
       }
     }
-    if (!workspace && engine.config.unrestrictedWorkspaces) workspace = cwd;
+    if (!workspace && engine.config.workspaceAllowlist.length === 0)
+      workspace = cwd;
     if (!workspace) return pass("workspace");
     signal?.throwIfAborted();
     const selector = new AlphaOptimizerEngine(
       {
         ...engine.config,
         mode: engine.config.autoMode,
-        jevEnabled: engine.config.jevEnabled && engine.config.autoJevEnabled,
+        jevEnabled: engine.config.jevEnabled,
         selectionTokenBudget: Math.min(engine.config.selectionTokenBudget, 800),
         selectionThresholdTokens: Math.min(
           engine.config.selectionThresholdTokens,
@@ -197,7 +198,7 @@ export async function processToolResult(
         exitCode: result.exitCode,
         responseType: "text",
         captureCompleteness: "unavailable",
-        privacyClass: engine.config.autoJevEnabled ? "normal" : "sensitive",
+        privacyClass: "normal",
         content: result.text,
       },
       {

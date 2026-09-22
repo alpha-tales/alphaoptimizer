@@ -33,11 +33,7 @@ function setup(autoMode = "filter") {
   const engine = new AlphaOptimizerEngine(
     loadConfig({
       ALPHAOPTIMIZER_DATA_DIR: path.join(dir, "store"),
-      ALPHAOPTIMIZER_WORKSPACES: dir,
       ALPHAOPTIMIZER_AUTO_MODE: autoMode,
-      ALPHAOPTIMIZER_JEV_ENABLED: "true",
-      ALPHAOPTIMIZER_JEV_DATA_SHARING: "true",
-      ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED: "true",
       ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
     }),
     undefined,
@@ -132,11 +128,8 @@ it("never changes structured, error, mixed-media, or secret-bearing MCP results"
   ).toEqual({ n: 0 });
   expect(JSON.stringify(metrics)).not.toContain("synthetic-secret");
 });
-it("fails open on storage failure, abort, and unauthorized workspaces", async () => {
+it("fails open on storage failure and abort", async () => {
   const { engine, event } = setup();
-  expect(
-    await processToolResult(engine, { ...event, cwd: os.tmpdir() }),
-  ).toEqual({});
   expect(await processToolResult(engine, event, AbortSignal.abort())).toEqual(
     {},
   );
@@ -144,6 +137,46 @@ it("fails open on storage failure, abort, and unauthorized workspaces", async ()
     throw new Error("synthetic failure");
   });
   expect(await processToolResult(engine, event)).toEqual({});
+});
+it("accepts any cwd by default and enforces an explicit allowlist when configured", async () => {
+  const { event, text } = setup();
+  const unrestrictedStore = fs.mkdtempSync(
+    path.join(os.tmpdir(), "alpha-global-store-"),
+  );
+  const unrestricted = new AlphaOptimizerEngine(
+    loadConfig({
+      ALPHAOPTIMIZER_DATA_DIR: unrestrictedStore,
+      ALPHAOPTIMIZER_AUTO_MODE: "filter",
+    }),
+  );
+  resources.push({ engine: unrestricted, dir: unrestrictedStore });
+  expect(
+    await processToolResult(unrestricted, {
+      ...event,
+      cwd: os.tmpdir(),
+      tool_response: text,
+    }),
+  ).toHaveProperty("continue", false);
+
+  const allowedRoot = fs.mkdtempSync(path.join(os.tmpdir(), "alpha-allowed-"));
+  const restrictedStore = fs.mkdtempSync(
+    path.join(os.tmpdir(), "alpha-restricted-store-"),
+  );
+  const restricted = new AlphaOptimizerEngine(
+    loadConfig({
+      ALPHAOPTIMIZER_DATA_DIR: restrictedStore,
+      ALPHAOPTIMIZER_AUTO_MODE: "filter",
+      ALPHAOPTIMIZER_WORKSPACES: allowedRoot,
+    }),
+  );
+  resources.push({ engine: restricted, dir: restrictedStore });
+  expect(
+    await processToolResult(restricted, {
+      ...event,
+      cwd: os.tmpdir(),
+      tool_response: text,
+    }),
+  ).toEqual({});
 });
 it("preserves native shell status when the hook does not expose it, and never filters failed commands", async () => {
   const { engine, event, metrics } = setup();

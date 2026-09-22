@@ -175,8 +175,6 @@ export class AlphaOptimizerEngine {
                     enabled: true,
                     endpoint: this.config.jevEndpoint,
                     apiKey: this.config.jevApiKey,
-                    dataSharing: this.config.jevDataSharing,
-                    termsAccepted: this.config.jevTermsAccepted,
                 });
                 const candidates = chunks
                     .filter((chunk) => !chunk.pinnedEvidence)

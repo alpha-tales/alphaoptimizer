@@ -166,9 +166,6 @@ it("captures Jev usage and timings without any source or credentials", async () 
   const config = loadConfig({
     ALPHAOPTIMIZER_DATA_DIR: await temp(),
     ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-    ALPHAOPTIMIZER_JEV_ENABLED: "true",
-    ALPHAOPTIMIZER_JEV_DATA_SHARING: "true",
-    ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED: "true",
     ALPHAOPTIMIZER_JEV_API_KEY: "PRIVATE_KEY",
   });
   const engine = new AlphaOptimizerEngine(config, undefined, {
@@ -201,9 +198,6 @@ it("records unknown provider usage on failure, cancellation, and no request for 
   const config = loadConfig({
     ALPHAOPTIMIZER_DATA_DIR: await temp(),
     ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS: "1",
-    ALPHAOPTIMIZER_JEV_ENABLED: "true",
-    ALPHAOPTIMIZER_JEV_DATA_SHARING: "true",
-    ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED: "true",
     ALPHAOPTIMIZER_JEV_API_KEY: "PRIVATE_KEY",
   });
   const engine = new AlphaOptimizerEngine(config, undefined, {

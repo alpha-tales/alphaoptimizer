@@ -3,7 +3,7 @@
 AlphaOptimizer is an open-source tool from AlphaTales that helps Codex work with large command and
 tool outputs. Instead of sending a huge log or search result straight into the context window,
 AlphaOptimizer keeps the useful parts visible, keeps the original output available for a limited
-time, and can use Jev to help rank what matters.
+time, and uses Jev to help rank what matters when an API key is configured.
 
 ## How It Works
 
@@ -43,8 +43,8 @@ The process is:
 10. If Codex needs more detail, it can read from the stored original output using that artifact ID.
 11. Stored output expires or is evicted by the configured cleanup rules.
 
-Jev is optional and disabled by default. AlphaOptimizer works without Jev, but Jev can improve the
-ranking of optional chunks when you explicitly enable data sharing.
+Jev is enabled by providing `ALPHAOPTIMIZER_JEV_API_KEY`. If the key is missing, unavailable, or the
+request fails, AlphaOptimizer falls back to local deterministic ranking.
 
 ## Installation
 
@@ -58,17 +58,14 @@ AlphaOptimizer requires Node `>=22 <23`.
 
 ## Configuration
 
-By default, AlphaOptimizer allows only the directory it starts in and creates a temporary local
-session ID. For regular use, configure the workspace and session explicitly:
-
-```sh
-ALPHAOPTIMIZER_WORKSPACES="/path/to/project" ALPHAOPTIMIZER_SESSION_ID="project-session" node dist/src/server.js
-```
+By default, AlphaOptimizer works as a global Codex plugin across any project directory. It still
+records the canonical workspace path with each stored output so later reads stay tied to the correct
+workspace and session.
 
 Common options:
 
 - `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
-- `ALPHAOPTIMIZER_WORKSPACES`: allowed workspace paths.
+- `ALPHAOPTIMIZER_WORKSPACES`: optional colon-separated allowlist if you want to restrict it.
 - `ALPHAOPTIMIZER_RETENTION_DAYS`: how long stored outputs are kept. Default: `14`.
 - `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget. Default: `268435456`.
 - `ALPHAOPTIMIZER_SELECTION_THRESHOLD_TOKENS`: minimum output size before selection.
@@ -84,9 +81,6 @@ ALPHAOPTIMIZER_MODE=off
 To enable Jev:
 
 ```sh
-ALPHAOPTIMIZER_JEV_ENABLED=true
-ALPHAOPTIMIZER_JEV_DATA_SHARING=true
-ALPHAOPTIMIZER_JEV_TERMS_ACCEPTED=true
 ALPHAOPTIMIZER_JEV_API_KEY=your-key
 ```
 
@@ -106,7 +100,7 @@ By default:
 - Expired outputs are cleaned on startup, before capture, and during regular sweeps.
 - Metrics are local estimates and do not include source text, goals, commands, paths, or API keys.
 
-Jev is not used unless you explicitly enable it. When enabled, AlphaOptimizer sends only bounded
+Jev is used when `ALPHAOPTIMIZER_JEV_API_KEY` is configured. AlphaOptimizer sends only bounded
 candidate chunks labelled `normal`; sensitive and secret outputs are not sent to Jev.
 
 ## Implemented Safeguards
@@ -114,7 +108,7 @@ candidate chunks labelled `normal`; sensitive and secret outputs are not sent to
 - Secret-looking outputs are skipped before capture.
 - Outputs marked `secret` are not captured.
 - Oversized artifacts pass through unchanged.
-- Jev is disabled unless all required opt-ins are set.
+- Jev is used only when an API key is configured.
 - Jev failures fall back to local deterministic selection.
 - Repository search uses workspace checks and avoids symlinks and sensitive paths by default.
 - Local storage has retention and quota limits.

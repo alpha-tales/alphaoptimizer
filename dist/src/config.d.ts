@@ -17,7 +17,6 @@ export declare const ConfigSchema: z.ZodObject<{
     selectionThresholdTokens: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     repositoryMaxFileBytes: z.ZodDefault<z.ZodCoercedNumber<unknown>>;
     workspaceAllowlist: z.ZodDefault<z.ZodArray<z.ZodString>>;
-    unrestrictedWorkspaces: z.ZodPreprocess<z.ZodDefault<z.ZodBoolean>, unknown>;
     sessionId: z.ZodString;
     metricsEnabled: z.ZodDefault<z.ZodBoolean>;
     autoMode: z.ZodDefault<z.ZodEnum<{
@@ -25,10 +24,7 @@ export declare const ConfigSchema: z.ZodObject<{
         observe: "observe";
         off: "off";
     }>>;
-    autoJevEnabled: z.ZodDefault<z.ZodBoolean>;
-    jevEnabled: z.ZodPreprocess<z.ZodDefault<z.ZodBoolean>, unknown>;
-    jevDataSharing: z.ZodPreprocess<z.ZodDefault<z.ZodBoolean>, unknown>;
-    jevTermsAccepted: z.ZodPreprocess<z.ZodDefault<z.ZodBoolean>, unknown>;
+    jevEnabled: z.ZodBoolean;
     jevEndpoint: z.ZodOptional<z.ZodString>;
     jevApiKey: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;

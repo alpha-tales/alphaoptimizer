@@ -5,6 +5,7 @@ import { z } from "zod";
 import { loadConfig } from "./config.js";
 import { VERSION, ToolObservationSchema } from "./contracts/schemas.js";
 import { handleHook, HookEventSchema } from "./hooks/adapter.js";
+import { automaticOutputPolicy } from "./hooks/policy.js";
 import { processToolResult, HostToolEventSchema } from "./hooks/automatic.js";
 import { AlphaOptimizerEngine } from "./optimizer.js";
 import { searchRepository as searchRepo } from "./repository/search.js";
@@ -21,7 +22,7 @@ const engine = new AlphaOptimizerEngine(config, undefined, metrics);
 const server = new McpServer({
   name: "alphaoptimizer",
   version: "0.1.0",
-});
+}, { instructions: automaticOutputPolicy + "\nUse optimization_status before claiming automatic optimization is active. Configured defaults are not proof of host hook delivery." });
 
 function textResult(value: unknown) {
   return {
@@ -260,6 +261,28 @@ server.registerTool(
 );
 
 const transport = new StdioServerTransport();
+let hookEventsReceived = 0;
+let replacementRequests = 0;
+server.registerTool(
+  "optimization_status",
+  {
+    title: "Optimization Status",
+    description: "Check automatic optimization configuration and hook delivery in this server process. Never returns credentials. Delivery alone does not prove model-visible reduction.",
+    inputSchema: {},
+    annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+  },
+  async () => textResult({
+    state: config.mode === "off" || config.autoMode !== "filter" || !config.jevApiKey
+      ? "inactive" : hookEventsReceived === 0 ? "awaiting_hook_verification" : "receiving_events",
+    mode: config.mode,
+    autoMode: config.autoMode,
+    jevKeyConfigured: Boolean(config.jevApiKey),
+    hookEventsReceived,
+    replacementRequests,
+    hostTrust: "managed by Codex; not observable by this server",
+    modelVisibleReduction: "requires a host probe; replacement requests are not proof",
+  }),
+);
 server.registerTool(
   "process_tool_result",
   {
@@ -269,7 +292,9 @@ server.registerTool(
     inputSchema: HostToolEventSchema.shape,
   },
   async (input, extra) => {
+    hookEventsReceived++;
     const feedback = await processToolResult(engine, input, extra.signal);
+    if (feedback.continue === false) replacementRequests++;
     return { ...textResult(feedback), structuredContent: feedback };
   },
 );

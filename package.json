@@ -7,7 +7,7 @@
     "alphaoptimizer": "dist/src/server.js"
   },
   "engines": {
-    "node": ">=22 <23"
+    "node": "^22.0.0 || ^24.0.0"
   },
   "files": [
     ".codex-plugin/",
@@ -17,11 +17,14 @@
     "skills/",
     "README.md",
     "SECURITY.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "hooks/",
+    "scripts/start.mjs",
+    "runtime-lock.json"
   ],
   "scripts": {
     "clean": "node -e \"import('node:fs').then(fs=>fs.rmSync('dist',{recursive:true,force:true}))\"",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json && node dist/scripts/package-assets.js",
     "dev": "tsx src/server.ts",
     "test": "vitest run tests",
     "typecheck": "tsc -p tsconfig.json --noEmit",
@@ -34,7 +37,9 @@
     "metrics": "node dist/src/telemetry/report.js",
     "compat:auto": "tsx scripts/auto-hook-probe.ts",
     "hooks:enable": "tsx scripts/enable-auto-hooks.ts",
-    "hooks:disable": "tsx scripts/enable-auto-hooks.ts --disable"
+    "hooks:disable": "tsx scripts/enable-auto-hooks.ts --disable",
+    "package:plugin": "npm run build && tsx scripts/bundle-plugin.ts",
+    "compat:plugin": "node dist/scripts/plugin-probe.js"
   },
   "keywords": [
     "codex",
@@ -53,7 +58,9 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
+    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^26.6.2",
+    "cross-spawn": "^7.0.6",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"

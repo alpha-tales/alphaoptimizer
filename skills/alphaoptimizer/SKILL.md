@@ -8,6 +8,11 @@ description: Use AlphaOptimizer to capture large textual tool results, keep raw 
 Use the AlphaOptimizer MCP tools for large textual outputs, repository evidence lookup, or explicit
 criteria tracking.
 
+The installed plugin supplies automatic hooks and code-mode instructions. Use `optimization_status`
+before claiming automatic optimization is active. Missing Jev credentials, disabled modes, untrusted
+hooks, and a server receiving no processing events must not be reported as working optimization.
+Never request or print an API key in a tool result.
+
 Default behavior is conservative:
 
 - Prefer `select_evidence` only for large textual output where exact recovery matters.

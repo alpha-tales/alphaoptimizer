@@ -25,3 +25,6 @@ coverage/
 *.tsbuildinfo
 *.tgz
 *.zip
+
+# Self-contained platform distributions
+release/

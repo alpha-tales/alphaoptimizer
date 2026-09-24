@@ -1,11 +1,12 @@
 {
   "mcpServers": {
     "alphaoptimizer": {
-      "command": "alphaoptimizer",
-      "args": [],
-      "env": {
-        "ALPHAOPTIMIZER_MODE": "observe"
-      }
+      "command": "node",
+      "args": [
+        "scripts/start.mjs"
+      ],
+      "startup_timeout_sec": 120,
+      "cwd": "."
     }
   }
 }

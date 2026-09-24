@@ -13,7 +13,7 @@ const StrictBooleanSchema = z.preprocess((value) => {
 }, z.boolean().default(false));
 
 export const ConfigSchema = z.object({
-  mode: ModeSchema.default("observe"),
+  mode: ModeSchema.default("filter"),
   dataDir: z
     .string()
     .default(path.join(os.homedir(), ".local", "share", "alphaoptimizer")),
@@ -41,7 +41,7 @@ export const ConfigSchema = z.object({
   workspaceAllowlist: z.array(z.string()).default([]),
   sessionId: z.string().min(1),
   metricsEnabled: z.boolean().default(true),
-  autoMode: z.enum(["off", "observe", "filter"]).default("off"),
+  autoMode: z.enum(["off", "observe", "filter"]).default("filter"),
   jevEndpoint: z.string().url().optional(),
   jevApiKey: z.string().optional(),
 });
@@ -52,7 +52,7 @@ export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): AlphaOptimizerConfig {
   const configuredAllowlist =
-    env.ALPHAOPTIMIZER_WORKSPACES?.split(":").filter(Boolean);
+    env.ALPHAOPTIMIZER_WORKSPACES?.split(path.delimiter).filter(Boolean);
 
   return ConfigSchema.parse({
     mode: env.ALPHAOPTIMIZER_MODE,

@@ -51,13 +51,61 @@ Jev is used when `ALPHAOPTIMIZER_JEV_API_KEY` is provided.
 
 ## Installation
 
-```sh
-npm install
-npm run build
-node dist/src/server.js
-```
+> [!IMPORTANT]
+> **Required setup: add your Jev API key and trust the AlphaOptimizer hooks.**
+>
+> **1. Add the Jev key to Codex's `config.toml`.** The default user configuration is
+> `~/.codex/config.toml` on macOS/Linux, or `%USERPROFILE%\.codex\config.toml` on Windows.
+> If you set `CODEX_HOME`, use the `config.toml` inside that directory instead.
+> In your existing AlphaOptimizer MCP server configuration, add or update:
+>
+> ```toml
+> [mcp_servers.alphaoptimizer.env]
+> ALPHAOPTIMIZER_JEV_API_KEY = "paste-your-jev-api-key-here"
+> ```
+>
+> Keep the server's existing `command`, `args`, and `cwd`. If the `env` table already exists,
+> add the key there rather than duplicating the table. This snippet adds a credential to an
+> already registered server; it does not register the server by itself. Keep the real key
+> in your user configuration, not in this repository.
+>
+> **2. Review and trust the hooks in Codex.** In the desktop app, open **Settings** and
+> find **Hooks**, then review and trust AlphaOptimizer's `SessionStart` and `PostToolUse`
+> entries. Installing or enabling the plugin alone does **not** approve its hooks.
+> If your app version does not expose that control, open the Codex CLI using the same
+> `CODEX_HOME`, enter **`/hooks`**, and review and trust those AlphaOptimizer entries there.
+> Changed hook definitions require a new trust review after an update.
+>
+> **3. Restart Codex and start a new task** so the MCP server reads the key and the
+> session hook loads. Use `optimization_status` to check configuration and event delivery.
+> These are required setup steps, **not proof that the current installation works**:
+> the clean-install hook-delivery issue below remains unresolved.
 
-AlphaOptimizer requires Node `>=22 <23`.
+Setup references: OpenAI's [MCP configuration](https://learn.chatgpt.com/docs/extend/mcp#configure-with-configtoml),
+[configuration file location](https://learn.chatgpt.com/docs/config-file/config-basic#codex-configuration-file),
+[hook trust instructions](https://learn.chatgpt.com/docs/hooks#review-and-trust-hooks), and
+[desktop hook-review release note](https://learn.chatgpt.com/docs/changelog) (Codex app 26.506, 8 May 2026).
+
+**Release validation pending:** the clean installed-plugin hook probe is failing. Do not treat
+installation as proof of active optimization. See [verification and blockers](docs/installation-verification.md).
+
+Install the platform bundle for your operating system and CPU in Codex, then supply
+`ALPHAOPTIMIZER_JEV_API_KEY` in the MCP server environment. Filtering and the native hooks are
+included by default. Codex still requires its own hook trust review; an installed but untrusted
+plugin cannot intercept tool output. No `hooks:enable` command or `AGENTS.md` edits are required
+for bundled plugin installations. Start a new task after installation so session instructions load.
+
+Platform bundles include Node and native dependencies. They require no global npm package or
+Node installation. They are built by `npm run package:plugin` and the platform CI workflow;
+Windows/Linux bundles must pass their actual platform checks before release. This source change
+does not update previously installed copies or publish a release.
+
+For development or a source-based plugin installation, Node 22 or 24 and npm are required.
+The source launcher installs locked production dependencies in the plugin data directory on first
+start if absent. It never runs package lifecycle scripts, and validates native SQLite before serving.
+
+Call `optimization_status` to distinguish disabled/missing-key configuration from a server awaiting
+hook delivery. A received processing event is not proof that the model received reduced output.
 
 ## Configuration
 
@@ -67,7 +115,8 @@ workspace and session.
 
 Common options:
 
-- `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`.
+- `ALPHAOPTIMIZER_MODE`: `off`, `observe`, or `filter`. Default: `filter`.
+- `ALPHAOPTIMIZER_AUTO_MODE`: `off`, `observe`, or `filter`. Default: `filter`; `observe` never replaces automatic results.
 - `ALPHAOPTIMIZER_RETENTION_DAYS`: how long stored outputs are kept. Default: `14`.
 - `ALPHAOPTIMIZER_MAX_STORE_BYTES`: local storage budget. Default: `268435456`.
 - `ALPHAOPTIMIZER_METRICS_ENABLED`: set to `false` to disable local metrics.
@@ -120,18 +169,11 @@ AlphaOptimizer is released under the [MIT License](LICENSE).
 
 Copyright (c) 2026 AlphaTales. Created by Libin Joseph.
 
-## Portable MCP Installation
+## Standalone MCP installations
 
-The shipped `.mcp.json` runs the installed `alphaoptimizer` executable. Install the package into a
-bin directory on the Codex process's `PATH` before enabling its MCP server:
-
-```sh
-npm pack
-npm install --global ./alphaoptimizer-0.1.0.tgz
-```
-
-For a private/local npm installation, add that installation's `node_modules/.bin` to the launcher's
-`PATH`.
+A standalone MCP registration does not install plugin lifecycle hooks. This is an advanced
+integration, not the normal plugin installation. See [automatic integration](docs/automatic-use.md)
+for migration and host limitations.
 
 ## Development
 

@@ -1,9 +1,9 @@
 # AlphaOptimizer Operations
 
 AlphaOptimizer is a local MCP tool for preserving raw tool output while returning smaller,
-cited evidence selections. New installations default to observation behavior through
-`ALPHAOPTIMIZER_MODE=observe`; set `off` to disable capture and selection entirely. Use `filter`
-only after host compatibility is proven.
+cited evidence selections. New installations default to `filter` for both general and automatic
+modes; set `ALPHAOPTIMIZER_MODE=off` to disable capture and selection entirely. A Jev key and
+trusted Codex hooks are needed for automatic reduction. See automatic-use.md for verification.
 
 ## Run Locally
 

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, codexSync } from "./codex-command.js";
 
 const root = process.cwd();
 const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "alpha-auto-probe-"));
@@ -23,6 +23,11 @@ const results: Array<Record<string, unknown>> = [];
 try {
   const emitter = path.join(temporary, "emit.cjs");
   await fs.writeFile(emitter, `process.stdout.write(${JSON.stringify(text)})`);
+  const mock = path.join(temporary, "mock-jev.mjs");
+  await fs.writeFile(mock, `globalThis.fetch = async (_url, init) => {
+    const questions = JSON.parse(init.body).questions;
+    return new Response(JSON.stringify({model:"jev-1.13.0", answers:Object.fromEntries(Object.keys(questions).map(id=>[id,{type:"noul",noul:0.1}])),usage:{input_tokens:1,output_tokens:0}}));
+  };`);
   const fixture = path.join(temporary, "fixture.mjs");
   const sdk = path.join(
     root,
@@ -65,7 +70,8 @@ try {
             sawKept ||= serialized.includes(kept);
             sawFeedback ||= serialized.includes("Reduced tool result");
           }
-          const command = `${JSON.stringify(process.execPath)} ${JSON.stringify(emitter)}`;
+          const quote = (value: string) => "'" + value.replaceAll("'", process.platform === "win32" ? "''" : "'\\''") + "'";
+          const command = `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(emitter)}`;
           let output: Record<string, unknown>;
           if (calls === 1) {
             type Spec = {
@@ -111,7 +117,7 @@ try {
             } else {
               const name =
                 mode === "mcp"
-                  ? "emit"
+                  ? (() => { const tool = specs.find(t => t.namespace?.includes("fixture") || t.name.includes("fixture")); if (!tool) throw new Error("Fixture MCP tool is not exposed by this host"); return tool.name; })()
                   : specs.some((s) => s.name === "exec_command")
                     ? "exec_command"
                     : "shell_command";
@@ -121,7 +127,7 @@ try {
                 call_id: "call_probe",
                 name,
                 status: "completed",
-                ...(mode === "mcp" ? { namespace: "mcp__fixture" } : {}),
+                ...(mode === "mcp" && specs.find(t => t.name === name)?.namespace ? { namespace: specs.find(t => t.name === name)!.namespace } : {}),
                 arguments: JSON.stringify(
                   mode === "mcp"
                     ? {}
@@ -207,8 +213,8 @@ try {
         `model="probe"`,
         `model_providers.probe={name="probe",base_url="http://127.0.0.1:${port}/v1",wire_api="responses",requires_openai_auth=false}`,
         `mcp_servers.alphaoptimizer.command=${JSON.stringify(process.execPath)}`,
-        `mcp_servers.alphaoptimizer.args=[${JSON.stringify(path.join(root, "dist/src/server.js"))}]`,
-        `mcp_servers.alphaoptimizer.env={ALPHAOPTIMIZER_DATA_DIR=${JSON.stringify(path.join(workspace, "data"))},ALPHAOPTIMIZER_AUTO_MODE=${JSON.stringify(mode === "baseline" ? "off" : "filter")}}`,
+        `mcp_servers.alphaoptimizer.args=["--import",${JSON.stringify(pathToFileURL(mock).href)},${JSON.stringify(path.join(root, "dist/src/server.js"))}]`,
+        `mcp_servers.alphaoptimizer.env={ALPHAOPTIMIZER_JEV_API_KEY="synthetic",ALPHAOPTIMIZER_DATA_DIR=${JSON.stringify(path.join(workspace, "data"))},ALPHAOPTIMIZER_AUTO_MODE=${JSON.stringify(mode === "baseline" ? "off" : "filter")}}`,
         `mcp_servers.alphaoptimizer.tools.process_tool_result.approval_mode="approve"`,
         `mcp_servers.fixture.command=${JSON.stringify(process.execPath)}`,
         `mcp_servers.fixture.args=[${JSON.stringify(fixture)}]`,
@@ -220,16 +226,44 @@ try {
         `features.chronicle=false`,
         `features.shell_snapshot=false`,
       ];
+      const childEnv = { ...process.env };
+      if (process.env.ALPHA_PROBE_PLUGIN_ROOT) {
+        const home = path.join(workspace, "codex-home");
+        const marketplace = path.join(workspace, "marketplace");
+        const plugin = path.join(marketplace, "plugins", "alphaoptimizer");
+        await fs.mkdir(home, { recursive: true });
+        await fs.cp(process.env.ALPHA_PROBE_PLUGIN_ROOT, plugin, { recursive: true });
+        const manifestPath = path.join(plugin, ".mcp.json");
+        const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
+        manifest.mcpServers.alphaoptimizer.env = {
+          ALPHAOPTIMIZER_JEV_API_KEY: "synthetic",
+          ALPHAOPTIMIZER_DATA_DIR: path.join(workspace, "data"),
+          NODE_OPTIONS: `--import=${pathToFileURL(mock).href}`,
+        };
+        await fs.writeFile(manifestPath, JSON.stringify(manifest));
+        await fs.mkdir(path.join(marketplace, ".agents/plugins"), { recursive: true });
+        await fs.writeFile(path.join(marketplace, ".agents/plugins/marketplace.json"), JSON.stringify({
+          name: "alpha-probe", plugins: [{ name: "alphaoptimizer", source: { source: "local", path: "./plugins/alphaoptimizer" }, policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" }, category: "Productivity" }],
+        }));
+        childEnv.CODEX_HOME = home;
+        childEnv.CODEX_API_KEY = "synthetic";
+        codexSync(["plugin", "marketplace", "add", marketplace], { env: childEnv, stdio: "pipe", encoding: "utf8" });
+        codexSync(["plugin", "add", "alphaoptimizer@alpha-probe"], { env: childEnv, stdio: "pipe", encoding: "utf8" });
+
+        for (let i = flags.length - 1; i >= 0; i--) {
+          if (flags[i].startsWith("mcp_servers.alphaoptimizer.") || flags[i].startsWith("hooks.PostToolUse=")) flags.splice(i, 1);
+        }
+      }
       let stdout = "",
         stderr = "";
       const child = spawn(
         "codex",
         [
           "exec",
-          "--ignore-user-config",
+          ...(process.env.ALPHA_PROBE_PLUGIN_ROOT ? [] : ["--ignore-user-config"]),
           "--dangerously-bypass-hook-trust",
-          "--ignore-rules",
-          "--ephemeral",
+          ...(process.env.ALPHA_PROBE_PLUGIN_ROOT ? [] : ["--ignore-rules"]),
+          ...(process.env.ALPHA_PROBE_PLUGIN_ROOT ? [] : ["--ephemeral"]),
           "--skip-git-repo-check",
           "-C",
           workspace,
@@ -239,12 +273,12 @@ try {
           ...flags.flatMap((v) => ["-c", v]),
           "Run the synthetic fixture tool once, then finish.",
         ],
-        { stdio: ["ignore", "pipe", "pipe"] },
+        { env: childEnv, stdio: ["ignore", "pipe", "pipe"] },
       );
-      child.stdout.on("data", (d) => {
+      child.stdout!.on("data", (d) => {
         stdout += d;
       });
-      child.stderr.on("data", (d) => {
+      child.stderr!.on("data", (d) => {
         stderr += d;
       });
       const timer = setTimeout(() => child.kill("SIGTERM"), 60000);
@@ -281,20 +315,21 @@ try {
         toolNames,
         metrics,
         outputPreview: JSON.stringify(capturedOutput)?.slice(0, 1500),
-        diagnostic: stderr.slice(-1500),
-        events: stdout.slice(-1500),
+        diagnostic: stderr.slice(-6000),
+        events: stdout.slice(0, 1800) + "\n...\n" + stdout.slice(-1500),
       });
     }),
   );
   const report = {
+    installedPlugin: Boolean(process.env.ALPHA_PROBE_PLUGIN_ROOT),
     timestamp: new Date().toISOString(),
-    codex: execFileSync("codex", ["--version"], { encoding: "utf8" }).trim(),
+    codex: codexSync(["--version"], { encoding: "utf8" }).trim(),
     scope:
       "Real CLI, synthetic model, production AlphaOptimizer MCP hook; no paid inference or user data",
     results,
   };
   await fs.writeFile(
-    path.join(root, "docs/automatic-hook-probe.json"),
+    path.join(root, process.env.ALPHA_PROBE_PLUGIN_ROOT ? "docs/plugin-hook-probe.json" : "docs/automatic-hook-probe.json"),
     JSON.stringify(report, null, 2) + "\n",
   );
   console.log(
@@ -337,7 +372,7 @@ try {
   )
     process.exitCode = 1;
 } finally {
-  await fs.rm(temporary, { recursive: true, force: true });
+  await fs.rm(temporary, { recursive: true, force: true, maxRetries: 3 });
 }
 
 function toToml(value: unknown): string {

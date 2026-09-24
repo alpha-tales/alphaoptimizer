@@ -1,41 +1,37 @@
 # Automatic tool-output processing
 
-Automatic processing is opt-in. It uses the connected AlphaOptimizer MCP server and does not
-require writing commands around the user's tools, changing permissions, or typing the plugin name
-in every request.
+Plugin installations bundle `hooks/hooks.json`: `PostToolUse` invokes the connected MCP processor,
+and `SessionStart` supplies the code-mode output policy on startup, resume, and compaction.
+The MCP server also advertises the policy in its initialization instructions. Both modes default
+to `filter`; only the Jev key is needed as product configuration. Explicit `off` and automatic
+`observe` settings remain respected. Missing keys and provider failures preserve original output.
 
-## Enable or disable
+Codex requires the user to trust plugin hooks. AlphaOptimizer does not bypass that review or change
+approval/sandbox policy. Start a new task after installation. Plugin installation no longer writes
+the user's `AGENTS.md` or requires a separate hook registration command.
 
-From this checkout, with AlphaOptimizer already registered in Codex:
+`optimization_status` reports configuration, whether a key exists (never its value), received
+processor calls and replacement requests for this server process. It deliberately does not claim
+host trust or model-visible reduction. Explicit processor calls also count as received events.
 
-```sh
-npm run build
-npm run compat:auto
-npm run hooks:enable
-```
+## Existing installations
 
-Restart Codex afterward. The installer preserves other hook groups and their indices, registers
-one `PostToolUse` MCP hook in the user's `hooks.json`, and trusts only its exact definition hash
-through Codex's normal configuration API. It sets `ALPHAOPTIMIZER_AUTO_MODE=filter` on the existing
-MCP server. Credentials, ordinary approval policy, sandbox settings, and other hooks are untouched.
+Update the installed plugin to pick up the bundled hooks. A previous explicit
+`ALPHAOPTIMIZER_AUTO_MODE=off` remains off; remove that old override to use the default or choose
+`filter`. Configuration is not silently overwritten. Previously installed user-level hooks should
+be removed during migration to avoid processing twice; review only AlphaOptimizer's entries.
 
-The installer also adds a marked section to the user's `AGENTS.md` for code-mode output emission.
-It updates that section idempotently and preserves surrounding instructions. The generated section
-is maintained in `src/hooks/policy.ts`.
+The old `npm run hooks:enable` / `hooks:disable` commands remain for advanced standalone MCP
+registrations. Do not run them for a bundled plugin. They manage legacy user hooks and a marked
+`AGENTS.md` section; they do not control the plugin-bundled hooks.
 
-To remove only AlphaOptimizer's automatic integration:
-
-```sh
-npm run hooks:disable
-```
-
-Restart Codex. The MCP tools remain installed and available explicitly. A disabled empty hook
-slot may remain to preserve the indices and trust keys of unrelated handlers.
+To disable automatic output replacement, set `ALPHAOPTIMIZER_AUTO_MODE=off` in the MCP environment.
+Set `ALPHAOPTIMIZER_MODE=off` to disable all capture/selection. Other settings are optional.
 
 ## Actual host coverage
 
 The real CLI probe runs against a local synthetic Responses endpoint with the production MCP
-server. It does not send workspace content to a paid model or Jev. Saved evidence is in
+server. It does not send workspace content to a paid model or Jev. A subprocess-local synthetic fetch implementation supplies Jev responses. Saved evidence is in
 `automatic-hook-probe.json`; the tested CLI version is recorded there.
 
 | Path | Behavior established by the probe |

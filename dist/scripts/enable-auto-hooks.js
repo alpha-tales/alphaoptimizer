@@ -2,7 +2,8 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn, execFile } from "node:child_process";
+import { execFile } from "node:child_process";
+import { spawn } from "./codex-command.js";
 import { promisify } from "node:util";
 import { createInterface } from "node:readline";
 import { z } from "zod";

@@ -3,11 +3,16 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawn, execFileSync } from "node:child_process";
+import { spawn, codexSync } from "./codex-command.js";
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), "alpha-hook-host-"));
 const original = "ALPHA_RAW_SENTINEL_70912";
 const replacement = "ALPHA_REPLACED_SENTINEL_84623";
 const results: unknown[] = [];
+const emitter = path.join(dir, "emit.cjs");
+await fs.writeFile(emitter, `process.stdout.write(${JSON.stringify(original)})`);
+const quote = (value: string) => "'" + value.replaceAll("'", process.platform === "win32" ? "''" : "'\\''") + "'";
+const shellCommand = `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(emitter)}`;
+const hookCommand = (hook: string) => `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(hook)}`;
 try {
   for (const mode of ["updatedMCPToolOutput", "continueFalse"]) {
     const managed = path.join(dir, mode);
@@ -28,7 +33,7 @@ try {
               hooks: [
                 {
                   type: "command",
-                  command: `'${process.execPath}' '${hook}'`,
+                  command: hookCommand(hook),
                   timeout: 5,
                 },
               ],
@@ -68,10 +73,10 @@ try {
               : "shell";
           const args =
             toolName === "exec_command"
-              ? { cmd: `/usr/bin/printf ${original}`, max_output_tokens: 100 }
+              ? { cmd: shellCommand, max_output_tokens: 100 }
               : toolName === "shell_command"
-                ? { command: `/usr/bin/printf ${original}` }
-                : { command: ["/usr/bin/printf", original] };
+                ? { command: shellCommand }
+                : { command: [process.execPath, emitter] };
           output = {
             type: "function_call",
             id: "fc_probe",
@@ -128,7 +133,7 @@ try {
       `model_provider="probe"`,
       `model="probe"`,
       `model_providers.probe={name="probe",base_url="http://127.0.0.1:${port}/v1",wire_api="responses",requires_openai_auth=false}`,
-      `hooks.PostToolUse=[{matcher="*",hooks=[{type="command",command=${JSON.stringify(`'${process.execPath}' '${hook}'`)},timeout=5}]}]`,
+      `hooks.PostToolUse=[{matcher="*",hooks=[{type="command",command=${JSON.stringify(hookCommand(hook))},timeout=5}]}]`,
       `features.code_mode_host=false`,
       `features.code_mode=false`,
       `features.memories=false`,
@@ -156,8 +161,8 @@ try {
       ],
       { stdio: ["ignore", "pipe", "pipe"] },
     );
-    child.stdout.on("data", (data) => (stdout += data));
-    child.stderr.on("data", (data) => (stderr += data));
+    child.stdout!.on("data", (data) => (stdout += data));
+    child.stderr!.on("data", (data) => (stderr += data));
     const timer = setTimeout(() => child.kill("SIGTERM"), 30000);
     const exitCode = await new Promise<number | null>((resolve, reject) => {
       child.on("error", reject);
@@ -184,7 +189,7 @@ try {
   }
   const report = {
     timestamp: new Date().toISOString(),
-    codex: execFileSync("codex", ["--version"], { encoding: "utf8" }).trim(),
+    codex: codexSync(["--version"], { encoding: "utf8" }).trim(),
     scope:
       "Real CLI hooks with synthetic local model transport; not desktop or production model validation",
     results,

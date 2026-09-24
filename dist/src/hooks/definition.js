@@ -1,4 +1,4 @@
-/** Opt-in user hook; deliberately not named hooks/hooks.json in the plugin package. */
+/** Shared by the bundled plugin hook and legacy standalone MCP setup. */
 export const automaticHookGroup = {
     matcher: "*",
     hooks: [

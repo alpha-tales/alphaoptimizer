@@ -6,6 +6,7 @@
     "name": "AlphaTales"
   },
   "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "AlphaOptimizer",
     "shortDescription": "Keep raw evidence retrievable while returning concise excerpts.",
